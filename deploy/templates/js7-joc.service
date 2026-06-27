@@ -1,0 +1,25 @@
+# Rendered by 03-install-joc-cockpit.sh -> /etc/systemd/system/js7-joc.service
+# JS7 JOC Cockpit (web UI), an embedded Jetty server listening on 127.0.0.1.
+[Unit]
+Description=JS7 JOC Cockpit
+Documentation=https://kb.sos-berlin.com/display/JS7
+After=network-online.target mysql.service
+Wants=network-online.target
+Requires=mysql.service
+
+[Service]
+Type=forking
+User=@@JS7_USER@@
+Group=@@JS7_GROUP@@
+Environment=JAVA_HOME=@@JAVA_HOME@@
+Environment=JETTY_HOME=@@JOC_HOME@@/jetty
+Environment=JETTY_BASE=@@JOC_DATA@@
+PIDFile=@@JOC_DATA@@/logs/jetty.pid
+ExecStart=@@JOC_HOME@@/jetty/bin/jetty.sh start
+ExecStop=@@JOC_HOME@@/jetty/bin/jetty.sh stop
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

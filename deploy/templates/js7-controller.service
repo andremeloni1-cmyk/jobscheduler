@@ -1,0 +1,21 @@
+# Rendered by 04-install-controller.sh -> /etc/systemd/system/js7-controller.service
+# JS7 Controller — orchestrates workflows, talks to Agents. Bound to 127.0.0.1.
+[Unit]
+Description=JS7 Controller
+Documentation=https://kb.sos-berlin.com/display/JS7
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=@@JS7_USER@@
+Group=@@JS7_GROUP@@
+Environment=JAVA_HOME=@@JAVA_HOME@@
+ExecStart=@@CONTROLLER_HOME@@/bin/controller_instance.sh start
+ExecStop=@@CONTROLLER_HOME@@/bin/controller_instance.sh stop
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
