@@ -1,62 +1,50 @@
-# JobScheduler on Hostinger
+# JoineryFlow
 
-Deploy **JS7 JobScheduler** — the supported successor to the end-of-life SOS
-JobScheduler 1.x — on a **Hostinger VPS**, with the **JOC Cockpit** web UI served over
-**HTTPS** on your own subdomain.
+A **mobile-first dashboard to organise and schedule joinery jobs from your phone**,
+with Google automations built in. The app lives in **[`app/`](app/)**.
 
-This repo is a deployment kit: idempotent install scripts plus a runbook. It originally
-held install samples for the EOL JobScheduler 1.3.12; those are archived under
-[`legacy/`](legacy/) for reference and are **not** used anymore.
+![status](https://img.shields.io/badge/stack-Next.js%20·%20TypeScript%20·%20Prisma-ba6b2b)
 
-## What it sets up
+## Features
 
-A single VPS running:
+1. **Auto-add to Google Calendar** when a job is accepted.
+2. **Move & delete jobs** — drag on the calendar to reschedule; deleting clears the calendar event.
+3. **Save job PDFs from email to Google Drive** and open them straight from the calendar event.
+4. **Automated client emails** on accept / move / cancel (editable templates).
+5. **Maintenance reports** per job — fill in, generate a branded PDF, save to Drive and email the client.
 
-- **MySQL 8** — JOC inventory/history database (localhost only)
-- **JOC Cockpit** — browser UI on `127.0.0.1:4446`, exposed via nginx + Let's Encrypt
-- **Controller** (`:4444`) — orchestrates workflows
-- **Agent** (`:4445`) — runs the jobs
-- **nginx + certbot** — TLS termination on ports 80/443
+Runs in a safe **demo mode** before you connect Google, so you can try everything
+immediately, then flip the integrations on from Settings.
 
-Only 22/80/443 are open (`ufw`); the JS7 components listen on localhost and are reached
-through nginx.
-
-## Quick start
-
-On a fresh **Ubuntu 22.04/24.04 LTS** Hostinger VPS, as root:
+## Get started
 
 ```bash
-git clone https://github.com/andremeloni1-cmyk/jobscheduler.git
-cd jobscheduler
-cp deploy/config.env.example deploy/config.env
-nano deploy/config.env          # set DOMAIN, email, JS7_VERSION, DB passwords
-sudo bash deploy/install-all.sh
+cd app
+cp .env.example .env
+npm install
+npx prisma migrate deploy && npx prisma db seed
+npm run dev          # http://localhost:3000
 ```
 
-Then browse to `https://<your-subdomain>` and log in with the JS7 default
-**`root` / `root`** — and change that password immediately.
+- **App docs:** [`app/README.md`](app/README.md)
+- **Connect Google:** [`app/deploy/GOOGLE_SETUP.md`](app/deploy/GOOGLE_SETUP.md)
+- **Deploy to Hostinger (one command):** [`app/deploy/DEPLOY.md`](app/deploy/DEPLOY.md)
 
-**Before you start:** create a DNS `A` record for your subdomain pointing at the VPS IP
-(Let's Encrypt needs it). Full step-by-step instructions, hardening, backups, upgrades
-and troubleshooting are in **[`docs/RUNBOOK.md`](docs/RUNBOOK.md)**.
-
-## Repository layout
-
-```
-deploy/                 deployment kit
-  config.env.example    copy to config.env and edit (git-ignored; holds secrets)
-  install-all.sh        runs 01..07 in order
-  01..07-*.sh           individual, idempotent install/verify steps
-  lib/common.sh         shared helpers
-  templates/            systemd units, nginx vhost, hibernate + JOC response files
-docs/RUNBOOK.md         full deployment guide
-legacy/                 archived JobScheduler 1.x samples (deprecated)
+```bash
+# on a fresh Ubuntu Hostinger VPS:
+sudo DOMAIN=jobs.yourdomain.com EMAIL=you@yourdomain.com bash app/deploy/install.sh
 ```
 
-## Notes
+---
 
-- Requires a **VPS** (root + Java + MySQL). Shared hosting will not work.
-- Scripts are validated by `shellcheck`/`bash -n` and template-render checks; live
-  end-to-end verification happens when you run them on the VPS (see the runbook).
-- References: [JS7 Knowledge Base](https://kb.sos-berlin.com/display/JS7) ·
-  [JS7 downloads](https://sourceforge.net/projects/jobscheduler/files/JobScheduler.2/)
+## Archived: JS7 JobScheduler deployment kit
+
+This repository previously held a deployment kit for **JS7 JobScheduler** (an
+unrelated server-orchestration product). That material is unrelated to the
+JoineryFlow app and is kept only for reference:
+
+- [`deploy/`](deploy/) — JS7 install scripts
+- [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — JS7 runbook
+- [`legacy/`](legacy/) — JobScheduler 1.x samples
+
+It is **not** used by JoineryFlow and can be ignored (or removed) safely.
