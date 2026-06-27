@@ -1,0 +1,23 @@
+# Rendered by 05-install-agent.sh -> /etc/systemd/system/js7-agent.service
+# JS7 Agent — executes jobs on this host. Bound to 127.0.0.1.
+[Unit]
+Description=JS7 Agent
+Documentation=https://kb.sos-berlin.com/display/JS7
+After=network-online.target js7-controller.service
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=@@JS7_USER@@
+Group=@@JS7_GROUP@@
+Environment=JAVA_HOME=@@JAVA_HOME@@
+Environment=JS7_AGENT_HOME=@@AGENT_HOME@@
+Environment=JS7_AGENT_DATA=@@AGENT_DATA@@
+ExecStart=@@AGENT_HOME@@/bin/agent_@@AGENT_HTTP_PORT@@.sh start
+ExecStop=@@AGENT_HOME@@/bin/agent_@@AGENT_HTTP_PORT@@.sh stop
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

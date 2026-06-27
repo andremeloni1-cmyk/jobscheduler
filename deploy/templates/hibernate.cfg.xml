@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Rendered by 03-install-joc-cockpit.sh from deploy/templates/hibernate.cfg.xml.
+  JOC Cockpit reads this to connect to its reporting/inventory database (MySQL).
+  Placeholders are substituted from deploy/config.env (see TEMPLATE_KEYS in lib/common.sh).
+-->
+<!DOCTYPE hibernate-configuration PUBLIC
+  "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+  "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+  <session-factory>
+    <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
+    <property name="hibernate.connection.url">jdbc:mysql://@@DB_HOST@@:@@DB_PORT@@/@@DB_NAME@@?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC</property>
+    <property name="hibernate.connection.username">@@DB_USER@@</property>
+    <property name="hibernate.connection.password">@@DB_PASSWORD@@</property>
+    <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+    <property name="hibernate.show_sql">false</property>
+  </session-factory>
+</hibernate-configuration>

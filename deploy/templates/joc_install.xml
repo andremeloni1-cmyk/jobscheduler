@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  JS7 JOC Cockpit headless installation response file.
+  Rendered by 03-install-joc-cockpit.sh; placeholders come from config.env (see TEMPLATE_KEYS in lib/common.sh).
+
+  This drives the JOC `setup.sh <this-file>` headless installer. Panel IDs and
+  entry keys follow the JS7 JOC installer layout; if a future JS7 release renames
+  a panel, adjust here. See:
+  https://kb.sos-berlin.com/display/JS7/JS7+-+JOC+Cockpit+-+Headless+Installation+on+Linux+and+Windows
+-->
+<AutomatedInstallation langpack="eng">
+
+    <com.izforge.izpack.panels.HTMLInfoPanel id="welcome"/>
+    <com.izforge.izpack.panels.HTMLLicencePanel id="gpl_licence"/>
+
+    <!-- Installation (binaries) directory = JETTY_HOME -->
+    <com.izforge.izpack.panels.TargetPanel id="target">
+        <installpath>@@JOC_HOME@@</installpath>
+    </com.izforge.izpack.panels.TargetPanel>
+
+    <com.izforge.izpack.panels.PacksPanel id="package">
+        <pack index="0" name="JOC" selected="true"/>
+    </com.izforge.izpack.panels.PacksPanel>
+
+    <!-- JETTY configuration: data/config directory and HTTP port (localhost) -->
+    <com.izforge.izpack.panels.UserInputPanel id="jetty">
+        <userInput>
+            <entry key="jettyBaseDir" value="@@JOC_DATA@@"/>
+            <entry key="jettyPort" value="@@JOC_HTTP_PORT@@"/>
+            <!-- Bind to loopback only; nginx terminates TLS and proxies in. -->
+            <entry key="jettyListenAddress" value="127.0.0.1"/>
+            <entry key="withJettyInstall" value="yes"/>
+            <entry key="jettyStopPort" value="40446"/>
+        </userInput>
+    </com.izforge.izpack.panels.UserInputPanel>
+
+    <!-- Database: point JOC at the rendered hibernate config and create tables -->
+    <com.izforge.izpack.panels.UserInputPanel id="database">
+        <userInput>
+            <entry key="databaseConfigurationMethod" value="withHibernateFile"/>
+            <entry key="hibernateConfFile" value="@@JOC_DATA@@/resources/joc/hibernate.cfg.xml"/>
+            <entry key="databaseCreateTables" value="yes"/>
+        </userInput>
+    </com.izforge.izpack.panels.UserInputPanel>
+
+    <com.izforge.izpack.panels.InstallPanel id="install"/>
+    <com.izforge.izpack.panels.ProcessPanel id="process"/>
+    <com.izforge.izpack.panels.FinishPanel id="finish"/>
+</AutomatedInstallation>
