@@ -1,8 +1,8 @@
 // Client-safe formatting helpers.
 
-export function fmtMoney(amount?: number | null, currency = "GBP"): string {
+export function fmtMoney(amount?: number | null, currency = "AUD"): string {
   if (amount == null) return "—";
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount);
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency }).format(amount);
 }
 
 export function fmtDay(d?: string | Date | null): string {

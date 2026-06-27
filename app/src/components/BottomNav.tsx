@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const items = [
   { href: "/", label: "Jobs", icon: ClipboardIcon },
   { href: "/calendar", label: "Calendar", icon: CalendarIcon },
+  { href: "/reports", label: "Reports", icon: ReportIcon },
   { href: "/settings", label: "Settings", icon: CogIcon },
 ];
 
@@ -15,7 +16,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto grid max-w-2xl grid-cols-3">
+      <div className="mx-auto grid max-w-2xl grid-cols-4">
         {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
@@ -50,6 +51,14 @@ function CalendarIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
+    </svg>
+  );
+}
+function ReportIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" strokeLinejoin="round" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" strokeLinecap="round" />
     </svg>
   );
 }

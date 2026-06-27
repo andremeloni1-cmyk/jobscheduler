@@ -55,7 +55,7 @@ model Job {
 
   // Money
   quoteAmount  Float?
-  currency     String   @default("GBP")
+  currency     String   @default("AUD")
 
   // Site
   address      String?

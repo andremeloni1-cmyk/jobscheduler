@@ -45,6 +45,13 @@ export default function JobDetailPage() {
     load();
   }, [id]);
 
+  // Open the report editor directly when linked from the Reports section.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("report") === "1") {
+      setShowReport(true);
+    }
+  }, []);
+
   function flash(m: string) {
     setToast(m);
     setTimeout(() => setToast(null), 3000);

@@ -85,7 +85,7 @@ export default function DashboardPage() {
         <Stat label="Scheduled" value={String(counts.scheduled)} />
         <Stat
           label="Pipeline"
-          value={new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(counts.value)}
+          value={new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(counts.value)}
         />
       </div>
 

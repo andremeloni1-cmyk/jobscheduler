@@ -36,7 +36,7 @@ export function ReportEditor({
 }) {
   const [data, setData] = useState<ReportData>(() => {
     try {
-      return existing ? JSON.parse(existing.data) : {};
+      return existing?.data ? JSON.parse(existing.data) : {};
     } catch {
       return {};
     }
