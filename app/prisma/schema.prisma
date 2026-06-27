@@ -1,0 +1,130 @@
+// JoineryFlow data model.
+// SQLite keeps deployment on a Hostinger VPS dead simple (single file, no server).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// The single owner account. Holds Google OAuth tokens once connected.
+model Account {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  // Google OAuth — null until the owner connects their Google account.
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
+  googleEmail        String?
+  calendarId         String   @default("primary")
+  driveFolderId      String?  // root Drive folder where job PDFs are filed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  notes     String?
+  jobs      Job[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Job lifecycle: lead -> quoted -> accepted -> scheduled -> in_progress -> completed
+//                                         \-> cancelled (from any state)
+model Job {
+  id           String    @id @default(cuid())
+  reference    String    @unique          // human reference e.g. JOB-1042
+  title        String
+  description  String?
+  status       String    @default("lead") // see lifecycle above
+  priority     String    @default("normal") // low | normal | high
+
+  // Scheduling
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+  durationMins   Int       @default(120)
+
+  // Money
+  quoteAmount  Float?
+  currency     String   @default("GBP")
+
+  // Site
+  address      String?
+
+  // Client (denormalised contact kept for quick edits / leads without a saved client)
+  clientId     String?
+  client       Client?  @relation(fields: [clientId], references: [id])
+  clientName   String?
+  clientEmail  String?
+  clientPhone  String?
+
+  // Google links
+  googleEventId String?
+  driveFolderId String?  // Drive folder for this job's PDFs
+
+  documents    Document[]
+  reports      MaintenanceReport[]
+  activities   Activity[]
+
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// A PDF (or other file) saved from email into Google Drive, linked to a job.
+model Document {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name        String
+  driveFileId String?
+  webViewLink String?
+  source      String   @default("gmail") // gmail | upload | report
+  mimeType    String   @default("application/pdf")
+  createdAt   DateTime @default(now())
+}
+
+model MaintenanceReport {
+  id          String   @id @default(cuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status      String   @default("draft") // draft | sent
+  // Free-form report fields stored as JSON (engineer, findings, actions, recommendations, etc.)
+  data        String   @default("{}")
+  pdfPath     String?
+  driveFileId String?
+  webViewLink String?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Audit trail surfaced in the UI: what automations ran for a job.
+model Activity {
+  id        String   @id @default(cuid())
+  jobId     String?
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  type      String   // status_change | calendar | drive | email | report | note
+  message   String
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+// Editable templates for the automated client emails.
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  key       String   @unique // accepted | cancelled | moved | report
+  subject   String
+  body      String
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}

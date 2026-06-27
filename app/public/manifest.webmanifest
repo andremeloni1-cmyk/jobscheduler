@@ -1,0 +1,12 @@
+{
+  "name": "JoineryFlow — Job Scheduler",
+  "short_name": "JoineryFlow",
+  "description": "Organise and schedule joinery jobs, with Google Calendar, Drive and Gmail automations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#a05c26",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

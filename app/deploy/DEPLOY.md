@@ -1,0 +1,81 @@
+# Deploying JoineryFlow to Hostinger
+
+JoineryFlow is a Node.js (Next.js) app, so it needs a **Hostinger VPS** — not
+shared hosting. Any small plan (1 vCPU / 1 GB RAM) is plenty.
+
+## Before you start
+
+1. **A VPS** running Ubuntu 22.04 or 24.04 (Hostinger → VPS → choose Ubuntu).
+2. **A subdomain** pointed at the VPS: in Hostinger DNS add an `A` record, e.g.
+   `jobs` → your VPS IP. (Let's Encrypt needs this to issue a certificate.)
+3. **Google OAuth credentials** — see [GOOGLE_SETUP.md](GOOGLE_SETUP.md). You can
+   deploy first and add these later; the app runs in demo mode until then.
+
+## One-command install
+
+SSH into the VPS as root and run:
+
+```bash
+apt-get update && apt-get install -y git
+git clone https://github.com/andremeloni1-cmyk/jobscheduler.git
+cd jobscheduler/app
+sudo DOMAIN=jobs.yourdomain.com EMAIL=you@yourdomain.com bash deploy/install.sh
+```
+
+The script will:
+
+1. Install Node.js 20, nginx, pm2 and certbot.
+2. Create `.env` (with a random `SESSION_SECRET`) — **edit it** to add your
+   Google credentials and `OWNER_EMAIL`, then re-run the script.
+3. Install dependencies, run database migrations and seed default email templates.
+4. Build the app and start it under pm2 (auto-restart on boot/crash).
+5. Configure nginx as a reverse proxy and request a free HTTPS certificate.
+6. Lock the firewall down to SSH + HTTP/HTTPS.
+
+When it finishes, open `https://jobs.yourdomain.com` on your phone and add it to
+your home screen (it's a PWA — it behaves like an app).
+
+## Finishing Google setup
+
+1. Edit `app/.env` on the server:
+   ```env
+   GOOGLE_CLIENT_ID="..."
+   GOOGLE_CLIENT_SECRET="..."
+   OWNER_EMAIL="you@yourdomain.com"
+   ```
+2. Make sure the Google redirect URI is
+   `https://jobs.yourdomain.com/api/auth/google/callback`.
+3. `pm2 reload joineryflow` then **Settings → Connect Google account**.
+
+## Updating later
+
+```bash
+cd /root/jobscheduler/app && sudo bash deploy/update.sh
+```
+
+Pulls the latest code, migrates, rebuilds and reloads with zero config changes.
+
+## Operations cheat-sheet
+
+| Task | Command |
+|------|---------|
+| App status / logs | `pm2 status` · `pm2 logs joineryflow` |
+| Restart | `pm2 reload joineryflow` |
+| nginx reload | `nginx -t && systemctl reload nginx` |
+| Renew TLS (auto, but force) | `certbot renew` |
+| Back up data | copy `app/prisma/joineryflow.db` somewhere safe |
+
+## Backups
+
+All data lives in the single SQLite file `app/prisma/joineryflow.db`. A simple
+nightly backup:
+
+```bash
+echo '0 2 * * * cp /root/jobscheduler/app/prisma/joineryflow.db /root/backups/joineryflow-$(date +\%F).db' | crontab -
+mkdir -p /root/backups
+```
+
+## Optional: password gate
+
+For a little extra protection on a public URL, set `APP_PASSWORD` in `.env` and
+reload. You'll get a login screen; the session lasts 30 days per device.
