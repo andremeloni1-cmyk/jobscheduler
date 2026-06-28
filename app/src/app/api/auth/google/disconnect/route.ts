@@ -5,7 +5,7 @@ import { isAuthenticated } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const account = await prisma.account.findFirst();
   if (account) {
     await prisma.account.update({

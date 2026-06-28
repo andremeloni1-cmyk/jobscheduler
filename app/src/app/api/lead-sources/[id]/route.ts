@@ -4,10 +4,10 @@ import { isAuthenticated } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
   const data: Record<string, unknown> = {};
   if ("enabled" in body) data.enabled = Boolean(body.enabled);
@@ -17,12 +17,12 @@ export async function PATCH(req: Request, { params }: Params) {
     data.templates =
       body.templates == null ? null : typeof body.templates === "string" ? body.templates : JSON.stringify(body.templates);
   }
-  const source = await prisma.leadSource.update({ where: { id: params.id }, data });
+  const source = await prisma.leadSource.update({ where: { id: (await params).id }, data });
   return json({ source });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
-  await prisma.leadSource.delete({ where: { id: params.id } });
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
+  await prisma.leadSource.delete({ where: { id: (await params).id } });
   return json({ ok: true });
 }

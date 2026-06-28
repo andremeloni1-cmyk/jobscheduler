@@ -5,12 +5,12 @@ import { onStatusChange, onReschedule, removeCalendar } from "@/lib/automations"
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const job = await prisma.job.findUnique({
-    where: { id: params.id },
+    where: { id: (await params).id },
     include: {
       documents: { orderBy: { createdAt: "desc" } },
       reports: { orderBy: { createdAt: "desc" } },
@@ -22,8 +22,8 @@ export async function GET(_req: Request, { params }: Params) {
 }
 
 export async function PATCH(req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
-  const existing = await prisma.job.findUnique({ where: { id: params.id } });
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
+  const existing = await prisma.job.findUnique({ where: { id: (await params).id } });
   if (!existing) return json({ error: "not found" }, 404);
 
   const body = await req.json().catch(() => ({}));
@@ -44,7 +44,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const statusChanged = "status" in body && body.status !== existing.status;
   if (statusChanged) data.status = body.status;
 
-  const job = await prisma.job.update({ where: { id: params.id }, data });
+  const job = await prisma.job.update({ where: { id: (await params).id }, data });
 
   // Run automations after persisting.
   if (statusChanged) {
@@ -58,12 +58,12 @@ export async function PATCH(req: Request, { params }: Params) {
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
-  const existing = await prisma.job.findUnique({ where: { id: params.id } });
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
+  const existing = await prisma.job.findUnique({ where: { id: (await params).id } });
   if (!existing) return json({ error: "not found" }, 404);
 
   // Feature 2: deleting a job also removes its calendar event.
   await removeCalendar(existing).catch(() => {});
-  await prisma.job.delete({ where: { id: params.id } });
+  await prisma.job.delete({ where: { id: (await params).id } });
   return json({ ok: true });
 }

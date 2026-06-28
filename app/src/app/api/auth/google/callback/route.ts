@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const base = process.env.APP_URL || "http://localhost:3000";
-  if (!isAuthenticated()) return NextResponse.redirect(new URL("/login", base));
+  if (!(await isAuthenticated())) return NextResponse.redirect(new URL("/login", base));
 
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");

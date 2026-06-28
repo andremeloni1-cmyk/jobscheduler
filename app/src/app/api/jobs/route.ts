@@ -6,7 +6,7 @@ import { onStatusChange } from "@/lib/automations";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const scheduled = searchParams.get("scheduled");
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
 
   if (!body.title || typeof body.title !== "string") {

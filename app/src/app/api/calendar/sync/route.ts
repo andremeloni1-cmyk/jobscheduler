@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // Pull changes made directly in Google Calendar (jobs moved to another day) back
 // into the app so they don't drift.
 export async function POST() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   try {
     const result = await syncFromCalendar();
     return json({ ok: true, ...result });

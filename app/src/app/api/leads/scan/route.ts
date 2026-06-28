@@ -7,18 +7,18 @@ export const dynamic = "force-dynamic";
 
 // Allow either a logged-in user (manual "Check now") or the cron job
 // (presents the shared CRON_SECRET) to trigger an inbox scan.
-function authorized(req: Request): boolean {
-  if (isAuthenticated()) return true;
+async function authorized(req: Request): Promise<boolean> {
+  if (await isAuthenticated()) return true;
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.get("x-cron-secret") === secret) return true;
   return false;
 }
 
 export async function POST(req: Request) {
-  if (!authorized(req)) return json({ error: "unauthorized" }, 401);
+  if (!(await authorized(req))) return json({ error: "unauthorized" }, 401);
   // A logged-in user can force a re-scan (re-check emails already processed);
   // the cron never forces, so non-job emails aren't re-run through AI repeatedly.
-  const force = isAuthenticated() && new URL(req.url).searchParams.get("force") === "1";
+  const force = (await isAuthenticated()) && new URL(req.url).searchParams.get("force") === "1";
   try {
     // Manual checks look back a month so older/dismissed emails can return;
     // the scheduled Friday run only scans the past week's batch.

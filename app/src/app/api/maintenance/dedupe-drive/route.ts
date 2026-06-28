@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // One-time cleanup of duplicate files already in Drive, plus duplicate document
 // rows (same job + filename), keeping the most recent of each.
 export async function POST() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
   const drive = await dedupeJobFolders();
 

@@ -9,12 +9,12 @@ import { logActivity } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // Create or update a maintenance report draft.
 export async function POST(req: Request, { params }: Params) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
-  const job = await prisma.job.findUnique({ where: { id: params.id } });
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
+  const job = await prisma.job.findUnique({ where: { id: (await params).id } });
   if (!job) return json({ error: "not found" }, 404);
 
   const body = await req.json().catch(() => ({}));
