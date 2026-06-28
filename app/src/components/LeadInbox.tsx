@@ -12,8 +12,8 @@ function workingDays(durationMins: number): number {
 }
 
 /**
- * "Incoming jobs to approve" — leads imported from trusted senders' emails.
- * Approve accepts the job (and emails the sender); Dismiss removes it.
+ * "Jobs to confirm" — incoming jobs imported from trusted senders' emails.
+ * Confirm accepts the job (and emails the sender); Dismiss removes it.
  */
 export function LeadInbox({
   leads,
@@ -57,7 +57,7 @@ export function LeadInbox({
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
             {leads.length}
           </span>
-          Incoming jobs to approve
+          Jobs to confirm
         </h2>
         <button onClick={onScan} disabled={scanning} className="text-sm font-semibold text-brand-600 disabled:opacity-50">
           {scanning ? "Checking…" : "Check inbox"}
@@ -101,7 +101,7 @@ export function LeadInbox({
             </Link>
             <div className="mt-3 flex gap-2">
               <button className="btn-primary flex-1 py-2" disabled={busyId === job.id} onClick={() => approve(job)}>
-                {busyId === job.id ? "…" : "Approve"}
+                {busyId === job.id ? "…" : "Confirm"}
               </button>
               <button className="btn-secondary px-4 py-2" disabled={busyId === job.id} onClick={() => dismiss(job)}>
                 Dismiss

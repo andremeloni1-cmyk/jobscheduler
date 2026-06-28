@@ -41,7 +41,7 @@ export function RescheduleModal({
           scheduledStart: s ? s.toISOString() : null,
           scheduledEnd: e ? e.toISOString() : null,
           durationMins: dur,
-          status: job.status === "lead" || job.status === "quoted" ? "scheduled" : job.status,
+          status: job.status === "lead" ? "scheduled" : job.status,
           notify,
         }),
       });

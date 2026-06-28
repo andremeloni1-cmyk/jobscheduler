@@ -60,8 +60,8 @@ export async function POST(req: Request) {
     },
   });
 
-  // If a job is created already in a scheduled/accepted state, run automations.
-  if (status !== "lead" && status !== "quoted") {
+  // If a job is created already in a confirmed/scheduled state, run automations.
+  if (status !== "lead") {
     await onStatusChange(job, "lead").catch(() => {});
   }
 

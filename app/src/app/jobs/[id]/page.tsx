@@ -12,8 +12,7 @@ import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 
 const NEXT_ACTIONS: Record<string, { status: string; label: string; style: string }[]> = {
-  lead: [{ status: "quoted", label: "Mark quoted", style: "btn-secondary" }],
-  quoted: [{ status: "accepted", label: "Accept job", style: "btn-primary" }],
+  lead: [{ status: "accepted", label: "Confirm job", style: "btn-primary" }],
   accepted: [{ status: "in_progress", label: "Start work", style: "btn-primary" }],
   scheduled: [{ status: "in_progress", label: "Start work", style: "btn-primary" }],
   in_progress: [{ status: "completed", label: "Mark complete", style: "btn-primary" }],
@@ -203,7 +202,7 @@ export default function JobDetailPage() {
             <span className="text-stone-400">Not scheduled</span>
           )}
         </Row>
-        <Row icon="money" label="Quote">{fmtMoney(job.quoteAmount, job.currency)}</Row>
+        <Row icon="money" label="Value">{fmtMoney(job.quoteAmount, job.currency)}</Row>
         {job.googleEventId && (
           <Row icon="cal" label="Calendar">
             <span className="text-emerald-600">On Google Calendar ✓</span>

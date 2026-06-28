@@ -94,7 +94,7 @@ export default function DashboardPage() {
       // dismissed lead can be re-imported, and fixes apply to old emails).
       const res = await api<{ created: number; connected: boolean }>("/api/leads/scan?force=1", { method: "POST" });
       if (!res.connected) flash("Connect Google in Settings to check your inbox.");
-      else flash(res.created > 0 ? `Found ${res.created} new job${res.created > 1 ? "s" : ""} to approve` : "No new jobs in your inbox");
+      else flash(res.created > 0 ? `Found ${res.created} new job${res.created > 1 ? "s" : ""} to confirm` : "No new jobs in your inbox");
       await load();
     } catch {
       flash("Couldn't check the inbox just now.");
@@ -127,7 +127,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Incoming jobs to approve */}
+      {/* Jobs to confirm */}
       {leads.length > 0 && (
         <LeadInbox leads={leads} onChanged={load} onScan={scanInbox} scanning={scanning} />
       )}
@@ -137,7 +137,7 @@ export default function DashboardPage() {
         <Stat label="Active" value={String(counts.active)} />
         <Stat label="Scheduled" value={String(counts.scheduled)} />
         <Stat
-          label="Pipeline"
+          label="Value"
           value={new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(counts.value)}
         />
       </div>
