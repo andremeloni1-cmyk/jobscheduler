@@ -4,7 +4,10 @@ import { prisma } from "@/lib/db";
 
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
-  "https://www.googleapis.com/auth/drive",
+  // drive.file: access only the folders/files this app creates — not the
+  // user's entire Drive. Sufficient because we only ever create and read our
+  // own job folders. (Existing connections must reconnect to pick up the change.)
+  "https://www.googleapis.com/auth/drive.file",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/userinfo.email",
