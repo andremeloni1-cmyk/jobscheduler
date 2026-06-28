@@ -4,7 +4,7 @@ import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
 import { logActivity } from "@/lib/automations";
 import { nextReference } from "@/lib/utils";
-import { analyzeJobImages, visionConfigured } from "@/lib/vision";
+import { extractJobsFromEmail, visionConfigured } from "@/lib/vision";
 
 const IMAGE_RE = /^image\//i;
 
@@ -24,78 +24,112 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
 
   let created = 0;
   for (const m of messages) {
-    const exists = await prisma.job.findUnique({ where: { gmailMessageId: m.messageId } });
+    // Dedup at the email level: if any job already came from this message, skip
+    // the whole email (it may have produced several jobs).
+    const exists = await prisma.job.findFirst({ where: { gmailMessageId: m.messageId } });
     if (exists) continue;
 
-    let title = m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry";
-    let description = (m.body || m.snippet || "").slice(0, 1500);
-
-    // Feature: read image attachments (e.g. mii Kitchens' PNG job sheets) with
-    // AI vision and fold the extracted details into the lead.
     const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
-    if (imageAttachments.length > 0 && visionConfigured()) {
-      const read = await analyzeJobImages(
-        imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType }))
-      );
-      if (read) {
-        if (read.title && (!title || title === "New enquiry")) title = read.title;
-        description = [read.description, description && `— Email —\n${description}`]
-          .filter(Boolean)
-          .join("\n\n")
-          .slice(0, 4000);
+
+    // Ask AI to split the email (text + images) into its distinct jobs.
+    let extracted: Awaited<ReturnType<typeof extractJobsFromEmail>> = null;
+    if (visionConfigured()) {
+      extracted = await extractJobsFromEmail({
+        subject: m.subject,
+        body: m.body || m.snippet || "",
+        images: imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
+      });
+    }
+
+    // Build the list of jobs to create — AI-split, or a single fallback lead.
+    type NewJob = { title: string; description: string; address?: string | null; start?: Date | null; durationMins: number };
+    let toCreate: NewJob[];
+    if (extracted && extracted.length > 0) {
+      toCreate = extracted.map((j) => {
+        const start = combineDateTime(j.date, j.time);
+        return {
+          title: j.title?.trim() || "New job",
+          description: j.description?.trim() || "",
+          address: j.address?.trim() || null,
+          start,
+          durationMins: j.durationMins && j.durationMins > 0 ? Math.round(j.durationMins) : 120,
+        };
+      });
+    } else {
+      toCreate = [
+        {
+          title: m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry",
+          description: (m.body || m.snippet || "").slice(0, 1500),
+          address: null,
+          start: null,
+          durationMins: 120,
+        },
+      ];
+    }
+
+    const createdJobs = [];
+    for (const nj of toCreate) {
+      const job = await prisma.job.create({
+        data: {
+          reference: await nextReference(),
+          title: nj.title,
+          description: nj.description,
+          status: "lead",
+          address: nj.address,
+          clientName: m.fromName,
+          clientEmail: m.fromEmail,
+          leadSource: m.fromEmail,
+          gmailMessageId: m.messageId,
+          gmailThreadId: m.threadId,
+          scheduledStart: nj.start,
+          scheduledEnd: nj.start ? new Date(nj.start.getTime() + nj.durationMins * 60_000) : null,
+          durationMins: nj.durationMins,
+        },
+      });
+      createdJobs.push(job);
+      created++;
+    }
+
+    // File the email's attachments into the first job's Drive folder.
+    const primary = createdJobs[0];
+    if (primary) {
+      for (const att of m.attachments) {
+        const uploaded = await uploadToJobFolder(
+          { id: primary.id, reference: primary.reference, title: primary.title },
+          att.filename,
+          att.data,
+          att.mimeType
+        );
+        if (uploaded) {
+          await prisma.document.create({
+            data: {
+              jobId: primary.id,
+              name: uploaded.name,
+              driveFileId: uploaded.fileId,
+              webViewLink: uploaded.webViewLink,
+              source: "gmail",
+              mimeType: uploaded.mimeType,
+            },
+          });
+        }
       }
+      const note =
+        createdJobs.length > 1
+          ? `AI split this email into ${createdJobs.length} jobs`
+          : `Imported from email — ${m.fromName} <${m.fromEmail}>`;
+      await logActivity(primary.id, "lead", note, { messageId: m.messageId, jobs: createdJobs.length });
     }
-
-    const job = await prisma.job.create({
-      data: {
-        reference: await nextReference(),
-        title,
-        description,
-        status: "lead",
-        clientName: m.fromName,
-        clientEmail: m.fromEmail,
-        leadSource: m.fromEmail,
-        gmailMessageId: m.messageId,
-        gmailThreadId: m.threadId,
-      },
-    });
-
-    if (imageAttachments.length > 0 && visionConfigured()) {
-      await logActivity(job.id, "lead", `Read ${imageAttachments.length} image(s) with AI to extract job details`);
-    }
-
-    // File any attached PDFs into the job's Drive folder.
-    for (const att of m.attachments) {
-      const uploaded = await uploadToJobFolder(
-        { id: job.id, reference: job.reference, title: job.title },
-        att.filename,
-        att.data,
-        att.mimeType
-      );
-      if (uploaded) {
-        await prisma.document.create({
-          data: {
-            jobId: job.id,
-            name: uploaded.name,
-            driveFileId: uploaded.fileId,
-            webViewLink: uploaded.webViewLink,
-            source: "gmail",
-            mimeType: uploaded.mimeType,
-          },
-        });
-      }
-    }
-
-    await logActivity(
-      job.id,
-      "lead",
-      `Imported from email — ${m.fromName} <${m.fromEmail}>`,
-      { messageId: m.messageId, attachments: m.attachments.length }
-    );
-    created++;
   }
 
   return { created, connected: true };
+}
+
+/** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null. */
+function combineDateTime(date?: string, time?: string): Date | null {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "08:00";
+  const d = new Date(`${date}T${t}:00`);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 const DEFAULT_SOURCES = [

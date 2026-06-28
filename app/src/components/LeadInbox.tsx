@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { api, type JobDTO } from "@/lib/job";
-import { relativeTime } from "@/lib/format";
+import { relativeTime, fmtDay, fmtRange } from "@/lib/format";
 
 /**
  * "Incoming jobs to approve" — leads imported from trusted senders' emails.
@@ -71,7 +71,21 @@ export function LeadInbox({
                 From {job.clientName || job.leadSource}
                 {job.documents && job.documents.length > 0 ? ` · 📎 ${job.documents.length}` : ""}
               </p>
-              {job.description && <p className="mt-1 line-clamp-2 text-xs text-stone-400">{job.description}</p>}
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {job.scheduledStart ? (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    🗓 {fmtDay(job.scheduledStart)} · {fmtRange(job.scheduledStart, job.scheduledEnd)}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-xs text-stone-500">No date — set after approving</span>
+                )}
+                {job.address && (
+                  <span className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
+                    📍 {job.address}
+                  </span>
+                )}
+              </div>
+              {job.description && <p className="mt-1.5 line-clamp-2 text-xs text-stone-400">{job.description}</p>}
             </Link>
             <div className="mt-3 flex gap-2">
               <button className="btn-primary flex-1 py-2" disabled={busyId === job.id} onClick={() => approve(job)}>

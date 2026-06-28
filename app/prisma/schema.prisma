@@ -69,7 +69,7 @@ model Job {
 
   // Lead provenance — set when a job was imported from an incoming email.
   leadSource     String?  // sender email address it came from
-  gmailMessageId String?  @unique // dedupe imported emails
+  gmailMessageId String?  // source email (shared by all jobs split from one email)
   gmailThreadId  String?
 
   // Google links
