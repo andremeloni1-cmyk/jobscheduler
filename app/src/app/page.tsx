@@ -6,6 +6,7 @@ import { JobCard } from "@/components/JobCard";
 import { Modal } from "@/components/Modal";
 import { JobForm } from "@/components/JobForm";
 import { LeadInbox } from "@/components/LeadInbox";
+import { Brand } from "@/components/Brand";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
@@ -142,10 +143,7 @@ export default function DashboardPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-stone-900">JoineryFlow</h1>
-          <p className="text-sm text-stone-500">Your jobs at a glance</p>
-        </div>
+        <Brand variant="header" tagline="Your jobs at a glance" />
         <div className="flex items-center gap-2">
           <Link
             href="/activity"

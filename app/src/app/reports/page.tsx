@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusPill } from "@/components/StatusPill";
+import { EmptyState } from "@/components/EmptyState";
 import { relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 
@@ -108,7 +109,7 @@ export default function ReportsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card px-6 py-12 text-center text-sm text-stone-500">Nothing here.</div>
+        <EmptyState icon={<span className="text-2xl">📄</span>} title="Nothing here" subtitle="Reports for your jobs will show up here." />
       ) : (
         <div className="space-y-3">
           {filtered.map(({ job, state }) => {

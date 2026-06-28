@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Modal } from "@/components/Modal";
+import { EmptyState } from "@/components/EmptyState";
 import { StatusPill } from "@/components/StatusPill";
 import { fmtMoney, fmtDay } from "@/lib/format";
 import { api } from "@/lib/job";
@@ -91,9 +92,11 @@ export default function ClientsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card px-6 py-12 text-center text-sm text-stone-400">
-          {clients.length === 0 ? "No clients yet — they'll appear as jobs come in." : "No clients match your search."}
-        </div>
+        <EmptyState
+          icon={<span className="text-2xl">👤</span>}
+          title={clients.length === 0 ? "No clients yet" : "No matches"}
+          subtitle={clients.length === 0 ? "Clients appear here automatically as jobs come in." : "No clients match your search."}
+        />
       ) : (
         <div className="space-y-2.5">
           {filtered.map((c) => (

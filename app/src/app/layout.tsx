@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 
+const APP_NAME = process.env.APP_NAME || "JoineryFlow";
+
 export const metadata: Metadata = {
-  title: "JoineryFlow — Job Scheduler",
+  title: `${APP_NAME} — Job Scheduler`,
   description: "Organise and schedule joinery jobs, with Google Calendar, Drive and Gmail automations.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "JoineryFlow" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: APP_NAME },
 };
 
 export const viewport: Viewport = {
@@ -20,9 +22,19 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-GB">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Loaded in the browser (root layout = every page), so the single-page-font rule doesn't apply. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
-          <main className="flex-1 pb-24">{children}</main>
+          <main className="fade-in flex-1 pb-24">{children}</main>
           <BottomNav />
         </div>
       </body>
