@@ -80,3 +80,13 @@ export function jobEnd(start: Date, durationMins?: number | null): Date {
   const segs = workdaySegments(start, durationMins);
   return segs[segs.length - 1].end;
 }
+
+/** True if two time intervals overlap (touching edges don't count). */
+export function intervalsOverlap(
+  aStart: Date,
+  aEnd: Date,
+  bStart: Date,
+  bEnd: Date
+): boolean {
+  return aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime();
+}
