@@ -15,6 +15,20 @@ function reportState(job: JobDTO): ReportState {
   return "none";
 }
 
+/** Checklist completion % across all rooms in the latest report, or null. */
+function reportProgress(job: JobDTO): number | null {
+  const data = job.reports?.[0]?.data;
+  if (!data) return null;
+  try {
+    const rooms = (JSON.parse(data).rooms || []) as { items?: { done: boolean }[] }[];
+    const items = rooms.flatMap((r) => r.items || []);
+    if (items.length === 0) return null;
+    return Math.round((items.filter((i) => i.done).length / items.length) * 100);
+  } catch {
+    return null;
+  }
+}
+
 const TABS: { key: "all" | ReportState; label: string }[] = [
   { key: "all", label: "All" },
   { key: "none", label: "Needs report" },
@@ -63,8 +77,8 @@ export default function ReportsPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-1">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Maintenance reports</h1>
-        <p className="text-sm text-stone-500">Fill out a report per job and email it to the client as a PDF.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Job reports</h1>
+        <p className="text-sm text-stone-500">Tick off the work per room and email the client a completion report PDF.</p>
       </header>
 
       <div className="mb-4 mt-4 grid grid-cols-3 gap-3">
@@ -112,7 +126,17 @@ export default function ReportsPage() {
                     <StatusPill status={job.status} />
                   </div>
                   <div className="mt-3 flex items-center justify-between">
-                    <ReportBadge state={state} />
+                    <div className="flex items-center gap-2">
+                      <ReportBadge state={state} />
+                      {(() => {
+                        const pct = reportProgress(job);
+                        return pct != null ? (
+                          <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600">
+                            {pct}% done
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                     <span className="text-xs text-stone-400">
                       {state === "sent" && latest?.sentAt
                         ? `Sent ${relativeTime(latest.sentAt)}`

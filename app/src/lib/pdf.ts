@@ -1,8 +1,14 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
-export type RoomEntry = { name: string; work: string };
+export type ChecklistItem = { label: string; done: boolean };
+export type RoomEntry = { name: string; work?: string; items?: ChecklistItem[] };
 
 export type ReportData = {
+  scope?: string; // e.g. "Kitchen installation"
+  jobType?: string; // kitchen | bathroom | laundry | wardrobe | other
+  driveImagesLink?: string; // Google Drive link to site photos
+  signOffName?: string; // client sign-off
+  signOffDate?: string;
   engineer?: string;
   visitDate?: string;
   workCarried?: string;
@@ -12,7 +18,7 @@ export type ReportData = {
   followUp?: string;
   condition?: string; // Good | Fair | Needs attention
   nextServiceDate?: string;
-  rooms?: RoomEntry[]; // per-room breakdown of the work
+  rooms?: RoomEntry[]; // per-room breakdown + completion checklist
 };
 
 type Meta = {
@@ -104,6 +110,7 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   // Job meta block
   const metaRows: [string, string][] = [
     ["Job", `${meta.jobTitle}`],
+    ...((data.scope ? [["Scope", data.scope]] : []) as [string, string][]),
     ["Reference", meta.reference],
     ["Client", meta.clientName || "—"],
     ["Address", meta.address || "—"],
@@ -135,17 +142,40 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
 
   section("Work carried out", data.workCarried);
 
-  // Per-room breakdown
+  // Per-room breakdown with completion checklist
   if (data.rooms && data.rooms.length > 0) {
     ensureSpace(34);
     page.drawText("Work by room", { x: margin, y, size: 12, font: bold, color: BRAND });
     y -= 18;
     for (const room of data.rooms) {
-      if (!room.name && !room.work) continue;
+      const items = room.items || [];
+      if (!room.name && !room.work && items.length === 0) continue;
+      const done = items.filter((it) => it.done).length;
       ensureSpace(20);
       page.drawText(room.name || "Room", { x: margin, y, size: 11, font: bold, color: INK });
+      if (items.length > 0) {
+        page.drawText(`${done}/${items.length} complete`, { x: margin + 200, y, size: 9, font, color: MUTED });
+      }
       y -= 15;
-      paragraph(room.work || "—");
+      if (room.work) paragraph(room.work);
+      // Checklist — ASCII boxes so the standard font can always render them.
+      for (const it of items) {
+        ensureSpace(15);
+        page.drawText(`${it.done ? "[x]" : "[ ]"} ${it.label}`, { x: margin + 8, y, size: 10, font, color: INK });
+        y -= 15;
+      }
+      // Outstanding items.
+      const outstanding = items.filter((it) => !it.done);
+      if (outstanding.length > 0) {
+        ensureSpace(16);
+        page.drawText("To be completed:", { x: margin + 8, y, size: 10, font: bold, color: rgb(0.7, 0.4, 0.1) });
+        y -= 14;
+        for (const it of outstanding) {
+          ensureSpace(14);
+          page.drawText(`- ${it.label}`, { x: margin + 16, y, size: 10, font, color: INK });
+          y -= 14;
+        }
+      }
       y -= 8;
     }
     y -= 4;
@@ -154,6 +184,7 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   section("Findings", data.findings);
   section("Materials used", data.materialsUsed);
   section("Recommendations", data.recommendations);
+  if (data.driveImagesLink) section("Site photos", data.driveImagesLink);
 
   // Condition + next service summary box
   ensureSpace(72);
@@ -171,6 +202,15 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   page.drawText(data.condition || "—", { x: margin + 130, y: y - 22, size: 11, font, color: INK });
   page.drawText("Next service due:", { x: margin + 12, y: y - 42, size: 11, font: bold, color: INK });
   page.drawText(data.nextServiceDate || "—", { x: margin + 130, y: y - 42, size: 11, font, color: INK });
+  y -= 56;
+
+  // Client sign-off (handover acceptance)
+  ensureSpace(50);
+  y -= 24;
+  page.drawText("Signed (client):", { x: margin, y, size: 11, font: bold, color: INK });
+  page.drawText(data.signOffName || "________________________", { x: margin + 100, y, size: 11, font, color: INK });
+  page.drawText("Date:", { x: width - margin - 160, y, size: 11, font: bold, color: INK });
+  page.drawText(data.signOffDate || "____________", { x: width - margin - 120, y, size: 11, font, color: INK });
 
   // Footer
   page.drawText(
