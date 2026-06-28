@@ -87,15 +87,9 @@ export async function uploadToJobFolder(
     fields: "id, name, webViewLink, mimeType",
   });
 
-  // Make link-shareable so it opens from the calendar event without extra auth.
-  try {
-    await drive.permissions.create({
-      fileId: created.data.id!,
-      requestBody: { role: "reader", type: "anyone" },
-    });
-  } catch {
-    /* permission may already exist or be restricted by org policy */
-  }
+  // Files stay private to the connected Google account. The webViewLink on the
+  // calendar event opens for the owner (who is signed in) without making
+  // confidential client drawings / POs / addresses public to anyone with the link.
 
   return {
     fileId: created.data.id!,

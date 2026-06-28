@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { StatusPill } from "@/components/StatusPill";
@@ -33,7 +33,7 @@ export default function JobDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { job } = await api<{ job: JobDTO }>(`/api/jobs/${id}`);
@@ -41,10 +41,10 @@ export default function JobDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
   useEffect(() => {
     load();
-  }, [id]);
+  }, [load]);
 
   // Open the report editor directly when linked from the Reports section.
   useEffect(() => {

@@ -186,7 +186,13 @@ export async function scanForLeads(
 /** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null.
  * Defaults to the standard work-day start (06:30) when no time is given.
  * Safety net: if the AI returned a clearly past date (usually a wrong year),
- * roll the year forward so new jobs are never booked in the past. */
+ * roll the year forward so new jobs are never booked in the past.
+ *
+ * NOTE: the time is parsed in the SERVER's local timezone and stored as a
+ * "floating" wall-clock instant. The calendar sync reads it back the same way
+ * (see wallClock() in google/calendar.ts) and tags the event with BUSINESS_TZ,
+ * so 06:30 stays 06:30 for the business. This only holds while the server's
+ * timezone is stable — keep both halves in sync if that ever changes. */
 function combineDateTime(date?: string, time?: string): Date | null {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "06:30";

@@ -88,8 +88,11 @@ export async function findJobPdfAttachments(query: {
   if (!auth) return [];
 
   const gmail = google.gmail({ version: "v1", auth });
+  // Match on the job title or the client's address — NOT on `query.reference`,
+  // which is an app-generated id (e.g. JOB-1042) that never appears in the
+  // client's own email, so it can only ever match nothing.
   const terms: string[] = ['filename:pdf', 'has:attachment'];
-  const orTerms = [`"${query.reference}"`, `"${query.title}"`];
+  const orTerms = [`"${query.title}"`];
   if (query.clientEmail) orTerms.push(`from:${query.clientEmail}`);
   const q = `${terms.join(" ")} (${orTerms.join(" OR ")})`;
 
