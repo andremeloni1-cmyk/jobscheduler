@@ -106,6 +106,20 @@ export default function SettingsPage() {
     setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, ...patch } : t)));
   }
 
+  // Sample values so the preview shows what a real client would receive.
+  const previewVars: Record<string, string> = {
+    clientName: "Sarah Whitfield",
+    jobTitle: "Kitchen worktop replacement",
+    startDate: "Friday, 4 July 2026",
+    startTime: "07:00",
+    address: "14 Millbrook Lane, Bristol",
+    reference: "JOB-1042",
+    ownerName: name || "Your business",
+  };
+  function renderPreview(text: string): string {
+    return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => previewVars[k] ?? `{{${k}}}`);
+  }
+
   if (!data) return <div className="px-4 pt-6 text-stone-400">Loading…</div>;
 
   return (
@@ -240,6 +254,12 @@ export default function SettingsPage() {
                   value={t.body}
                   onChange={(e) => updateTemplate(t.key, { body: e.target.value })}
                 />
+                {/* Live preview — placeholders filled with sample client details */}
+                <div className="rounded-xl bg-stone-50 p-3">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-stone-400">Preview</p>
+                  <p className="text-sm font-semibold text-stone-800">{renderPreview(t.subject) || "(no subject)"}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-stone-600">{renderPreview(t.body)}</p>
+                </div>
               </div>
             </details>
           ))}

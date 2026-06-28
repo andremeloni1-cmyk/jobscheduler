@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { api, type JobDTO } from "@/lib/job";
-import { relativeTime, fmtDay, fmtRange } from "@/lib/format";
+import { fmtDay, fmtRange } from "@/lib/format";
+import { WORKDAY_MINS } from "@/lib/schedule";
+
+/** Estimated whole working days for a job, from its AI-detected duration. */
+function workingDays(durationMins: number): number {
+  return Math.round((durationMins || 0) / WORKDAY_MINS);
+}
 
 /**
  * "Incoming jobs to approve" — leads imported from trusted senders' emails.
@@ -79,6 +85,11 @@ export function LeadInbox({
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-xs text-stone-500">No date — set after approving</span>
+                )}
+                {workingDays(job.durationMins) >= 2 && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
+                    🛠 {workingDays(job.durationMins)} working days
+                  </span>
                 )}
                 {job.address && (
                   <span className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-stone-100 px-2 py-0.5 text-xs text-stone-500">

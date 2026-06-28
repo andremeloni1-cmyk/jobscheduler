@@ -64,11 +64,23 @@ export default function DashboardPage() {
     return { active, scheduled, value };
   }, [jobs]);
 
-  // Imported email leads awaiting approval.
-  const leads = useMemo(
-    () => jobs.filter((j) => j.leadSource && j.status === "lead"),
-    [jobs]
-  );
+  // Imported email leads awaiting approval. Collapse duplicates that share the
+  // same job name (e.g. a follow-up email about the same job) — keep only the
+  // most recently imported one so the inbox shows the up-to-date version.
+  const leads = useMemo(() => {
+    const pending = jobs.filter((j) => j.leadSource && j.status === "lead");
+    const newestByName = new Map<string, JobDTO>();
+    for (const j of pending) {
+      const key = j.title.trim().toLowerCase();
+      const existing = newestByName.get(key);
+      const ts = (x: JobDTO) => (x.createdAt ? new Date(x.createdAt).getTime() : 0);
+      if (!existing || ts(j) > ts(existing)) newestByName.set(key, j);
+    }
+    return [...newestByName.values()].sort((a, b) =>
+      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    );
+  }, [jobs]);
 
   function flash(m: string) {
     setToast(m);

@@ -17,7 +17,7 @@ const NON_JOB_RE = /\b(maintenance|maintanance|maintenence|mantenance|mantanace|
  * Idempotent: messages already imported (by Gmail message id) are skipped.
  */
 export async function scanForLeads(
-  opts: { force?: boolean } = {}
+  opts: { force?: boolean; sinceDays?: number } = {}
 ): Promise<{ created: number; connected: boolean }> {
   if (!(await isGoogleConnected())) return { created: 0, connected: false };
 
@@ -25,7 +25,11 @@ export async function scanForLeads(
   const emails = sources.map((s) => s.email.toLowerCase());
   if (emails.length === 0) return { created: 0, connected: true };
 
-  const messages = await findLeadMessages(emails, { sinceDays: 30, maxMessages: 25 });
+  // Scheduled scans only look at the last week — job emails arrive weekly (the
+  // Friday run picks up that week's batch). A manual "Check inbox" can look back
+  // further so older or previously-dismissed emails can still be re-imported.
+  const sinceDays = opts.sinceDays ?? 7;
+  const messages = await findLeadMessages(emails, { sinceDays, maxMessages: 25 });
 
   let created = 0;
   for (const m of messages) {

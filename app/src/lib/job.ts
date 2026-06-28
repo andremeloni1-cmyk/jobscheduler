@@ -21,6 +21,7 @@ export interface JobDTO {
   leadSource?: string | null;
   gmailMessageId?: string | null;
   notes?: string | null;
+  createdAt?: string;
   documents?: DocumentDTO[];
   reports?: ReportDTO[];
   activities?: ActivityDTO[];
