@@ -1,53 +1,73 @@
 import { google } from "googleapis";
 import { getAuthorizedClient } from "./oauth";
+import { prisma } from "@/lib/db";
 
-/** Builds a raw RFC 2822 message, optionally with a single PDF attachment. */
+const wrap76 = (s: string): string => s.replace(/(.{76})/g, "$1\r\n");
+const escapeHtml = (s: string): string =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Builds a raw RFC 2822 message: a text/plain + text/html alternative, with an
+ * optional inline logo (multipart/related, shown via cid:logo) and an optional
+ * PDF attachment (multipart/mixed). */
 function buildRawMessage(opts: {
   to: string;
   from: string;
   subject: string;
-  body: string;
+  text: string;
+  html: string;
   attachment?: { filename: string; data: Buffer; mimeType?: string };
+  logo?: { data: Buffer; mime: string };
 }): string {
-  const { to, from, subject, body, attachment } = opts;
+  const { to, from, subject, text, html, attachment, logo } = opts;
   const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
 
-  let mime: string;
-  if (attachment) {
-    const boundary = "joineryflow_boundary_000";
-    mime =
-      `From: ${from}\r\n` +
-      `To: ${to}\r\n` +
-      `Subject: ${encodedSubject}\r\n` +
-      `MIME-Version: 1.0\r\n` +
-      `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-      `${body}\r\n\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: ${attachment.mimeType || "application/pdf"}; name="${attachment.filename}"\r\n` +
-      `Content-Disposition: attachment; filename="${attachment.filename}"\r\n` +
-      `Content-Transfer-Encoding: base64\r\n\r\n` +
-      `${attachment.data.toString("base64")}\r\n` +
-      `--${boundary}--`;
-  } else {
-    mime =
-      `From: ${from}\r\n` +
-      `To: ${to}\r\n` +
-      `Subject: ${encodedSubject}\r\n` +
-      `MIME-Version: 1.0\r\n` +
-      `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-      body;
+  // text + html alternative.
+  const ALT = "jf_alt_b";
+  const altEntity =
+    `Content-Type: multipart/alternative; boundary="${ALT}"\r\n\r\n` +
+    `--${ALT}\r\n` +
+    `Content-Type: text/plain; charset="UTF-8"\r\n\r\n${text}\r\n\r\n` +
+    `--${ALT}\r\n` +
+    `Content-Type: text/html; charset="UTF-8"\r\n\r\n${html}\r\n\r\n` +
+    `--${ALT}--`;
+
+  // Wrap with multipart/related when there's an inline logo.
+  let contentEntity = altEntity;
+  if (logo) {
+    const REL = "jf_rel_b";
+    contentEntity =
+      `Content-Type: multipart/related; boundary="${REL}"\r\n\r\n` +
+      `--${REL}\r\n${altEntity}\r\n\r\n` +
+      `--${REL}\r\n` +
+      `Content-Type: ${logo.mime}\r\n` +
+      `Content-Transfer-Encoding: base64\r\n` +
+      `Content-ID: <logo>\r\n` +
+      `Content-Disposition: inline; filename="logo"\r\n\r\n${wrap76(logo.data.toString("base64"))}\r\n\r\n` +
+      `--${REL}--`;
   }
 
-  return Buffer.from(mime)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  // Wrap with multipart/mixed when there's a PDF attachment.
+  let rootEntity = contentEntity;
+  if (attachment) {
+    const MIX = "jf_mix_b";
+    rootEntity =
+      `Content-Type: multipart/mixed; boundary="${MIX}"\r\n\r\n` +
+      `--${MIX}\r\n${contentEntity}\r\n\r\n` +
+      `--${MIX}\r\n` +
+      `Content-Type: ${attachment.mimeType || "application/pdf"}; name="${attachment.filename}"\r\n` +
+      `Content-Disposition: attachment; filename="${attachment.filename}"\r\n` +
+      `Content-Transfer-Encoding: base64\r\n\r\n${wrap76(attachment.data.toString("base64"))}\r\n\r\n` +
+      `--${MIX}--`;
+  }
+
+  const mime = `From: ${from}\r\nTo: ${to}\r\nSubject: ${encodedSubject}\r\nMIME-Version: 1.0\r\n${rootEntity}`;
+
+  return Buffer.from(mime).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** Sends an email as the connected Google account. Returns true if sent. */
+/** Sends an email as the connected Google account. Renders an HTML version of
+ * the body and embeds the account logo (if set) in the signature. Returns true
+ * if sent. */
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -61,7 +81,16 @@ export async function sendEmail(opts: {
   const profile = await gmail.users.getProfile({ userId: "me" });
   const from = profile.data.emailAddress || "me";
 
-  const raw = buildRawMessage({ ...opts, from });
+  const account = await prisma.account.findFirst();
+  const logo = account?.logo
+    ? { data: Buffer.from(account.logo, "base64"), mime: account.logoMime || "image/png" }
+    : undefined;
+
+  const html =
+    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1c1917;white-space:pre-wrap">${escapeHtml(opts.body)}</div>` +
+    (logo ? `<div style="margin-top:16px"><img src="cid:logo" alt="logo" style="max-height:90px;max-width:280px"></div>` : "");
+
+  const raw = buildRawMessage({ to: opts.to, from, subject: opts.subject, text: opts.body, html, attachment: opts.attachment, logo });
   await gmail.users.messages.send({ userId: "me", requestBody: { raw } });
   return true;
 }
