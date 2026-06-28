@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export function Modal({
   open,
@@ -13,6 +14,11 @@ export function Modal({
   title: string;
   children: React.ReactNode;
 }) {
+  // Render into document.body so the dialog escapes the page's stacking context
+  // (the `fade-in` transform on <main> would otherwise trap it below the nav).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -24,12 +30,12 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal>
       <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl">
+      <div className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:max-h-[85vh] sm:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-stone-900">{title}</h2>
           <button onClick={onClose} className="rounded-full p-1.5 text-stone-400 hover:bg-stone-100" aria-label="Close">
@@ -40,6 +46,7 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
