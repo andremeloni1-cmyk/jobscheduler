@@ -23,6 +23,8 @@ model Account {
   calendarId         String   @default("primary")
   driveFolderId      String?  // root Drive folder where job PDFs are filed
   signature          String?  // appended to client emails
+  logo               String?  // base64 logo embedded in client email signatures
+  logoMime           String?  // mime type of the logo (e.g. image/png)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

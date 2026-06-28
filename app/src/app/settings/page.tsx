@@ -6,7 +6,7 @@ import { NotificationsCard } from "@/components/NotificationsCard";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
-  account: { name: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null } | null;
+  account: { name: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null; logo?: string | null; logoMime?: string | null } | null;
   templates: Template[];
   google: { configured: boolean; connected: boolean };
   ai?: { configured: boolean };
@@ -25,6 +25,8 @@ export default function SettingsPage() {
   const [data, setData] = useState<SettingsData | null>(null);
   const [name, setName] = useState("");
   const [signature, setSignature] = useState("");
+  const [logo, setLogo] = useState<string | null>(null);
+  const [logoMime, setLogoMime] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
   const [newSourceName, setNewSourceName] = useState("");
@@ -51,6 +53,8 @@ export default function SettingsPage() {
     setData(d);
     setName(d.account?.name || "");
     setSignature(d.account?.signature || "");
+    setLogo(d.account?.logo || null);
+    setLogoMime(d.account?.logoMime || null);
     setTemplates(d.templates);
     try {
       const ls = await api<{ sources: LeadSource[] }>("/api/lead-sources");
@@ -101,7 +105,7 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", {
         method: "PATCH",
-        body: JSON.stringify({ account: { name, signature }, templates }),
+        body: JSON.stringify({ account: { name, signature, logo, logoMime }, templates }),
       });
       setMsg("Saved ✓");
     } finally {
@@ -121,6 +125,23 @@ export default function SettingsPage() {
 
   function updateTemplate(key: string, patch: Partial<Template>) {
     setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, ...patch } : t)));
+  }
+
+  function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 300 * 1024) {
+      setMsg("Logo too large — please use an image under 300KB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result); // data:<mime>;base64,<data>
+      const comma = result.indexOf(",");
+      setLogo(comma >= 0 ? result.slice(comma + 1) : result);
+      setLogoMime(file.type || "image/png");
+    };
+    reader.readAsDataURL(file);
   }
 
   // Sample values so the preview shows what a real client would receive.
@@ -259,6 +280,18 @@ export default function SettingsPage() {
           placeholder={"Added to the bottom of every client email, e.g.\nMeloni Joinery\n0400 000 000"}
         />
         <p className="mt-1 text-xs text-stone-400">Appended to all automated client emails. Save settings to apply.</p>
+
+        <label className="label mt-3">Email logo</label>
+        {logo ? (
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`data:${logoMime || "image/png"};base64,${logo}`} alt="Email logo" className="max-h-16 rounded bg-white p-1 ring-1 ring-stone-200" />
+            <button className="btn-secondary" onClick={() => { setLogo(null); setLogoMime(null); }}>Remove</button>
+          </div>
+        ) : (
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={onLogoFile} className="block w-full text-sm text-stone-600" />
+        )}
+        <p className="mt-1 text-xs text-stone-400">Shown under the signature in client emails. PNG/JPG under 300KB. Save settings to apply.</p>
       </div>
 
       {/* Email templates */}
