@@ -16,7 +16,9 @@ const NON_JOB_RE = /\b(maintenance|maintanance|maintenence|mantenance|mantanace|
  * turns each new one into a job lead (status "lead") for the owner to approve.
  * Idempotent: messages already imported (by Gmail message id) are skipped.
  */
-export async function scanForLeads(): Promise<{ created: number; connected: boolean }> {
+export async function scanForLeads(
+  opts: { force?: boolean } = {}
+): Promise<{ created: number; connected: boolean }> {
   if (!(await isGoogleConnected())) return { created: 0, connected: false };
 
   const sources = await prisma.leadSource.findMany({ where: { enabled: true } });
@@ -27,15 +29,25 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
 
   let created = 0;
   for (const m of messages) {
-    // Dedup at the email level: skip if already scanned (even if it produced no
-    // jobs) or already imported as job(s).
-    const seen = await prisma.processedEmail.findUnique({ where: { messageId: m.messageId } });
-    if (seen) continue;
+    // Always skip emails that still have job(s) in the app (avoid duplicates).
     const exists = await prisma.job.findFirst({ where: { gmailMessageId: m.messageId } });
     if (exists) continue;
+    // The automatic scan also skips anything already scanned (even if it made no
+    // jobs) so non-job emails aren't re-run through AI every 15 min. A manual
+    // "Check inbox" (force) re-evaluates them — e.g. after dismissing a lead.
+    if (!opts.force) {
+      const seen = await prisma.processedEmail.findUnique({ where: { messageId: m.messageId } });
+      if (seen) continue;
+    }
 
     const markProcessed = (jobsCreated: number, reason?: string) =>
-      prisma.processedEmail.create({ data: { messageId: m.messageId, jobsCreated, reason } }).catch(() => {});
+      prisma.processedEmail
+        .upsert({
+          where: { messageId: m.messageId },
+          create: { messageId: m.messageId, jobsCreated, reason },
+          update: { jobsCreated, reason },
+        })
+        .catch(() => {});
 
     // Maintenance / non-job emails are never bookable jobs — skip without AI.
     if (NON_JOB_RE.test(m.subject || "")) {

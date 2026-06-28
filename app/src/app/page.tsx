@@ -78,7 +78,9 @@ export default function DashboardPage() {
   async function scanInbox() {
     setScanning(true);
     try {
-      const res = await api<{ created: number; connected: boolean }>("/api/leads/scan", { method: "POST" });
+      // force=1: re-check emails even if a previous scan already saw them (so a
+      // dismissed lead can be re-imported, and fixes apply to old emails).
+      const res = await api<{ created: number; connected: boolean }>("/api/leads/scan?force=1", { method: "POST" });
       if (!res.connected) flash("Connect Google in Settings to check your inbox.");
       else flash(res.created > 0 ? `Found ${res.created} new job${res.created > 1 ? "s" : ""} to approve` : "No new jobs in your inbox");
       await load();
