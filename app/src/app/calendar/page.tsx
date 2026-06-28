@@ -7,6 +7,10 @@ import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtRange } from "@/lib/format";
 import { type JobStatus } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
+import { workdaySegments, jobEnd, WORKDAY_MINS } from "@/lib/schedule";
+
+// A job rendered on a particular day, carrying that day's working segment.
+type DayJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
 
 function startOfWeek(d: Date): Date {
   const date = new Date(d);
@@ -85,10 +89,23 @@ export default function CalendarPage() {
     };
   }, [mode, month, weekStart]);
 
-  function jobsForDay(day: Date) {
-    return jobs
-      .filter((j) => j.scheduledStart && sameDay(new Date(j.scheduledStart), day))
-      .sort((a, b) => new Date(a.scheduledStart!).getTime() - new Date(b.scheduledStart!).getTime());
+  function jobsForDay(day: Date): DayJob[] {
+    const out: DayJob[] = [];
+    for (const j of jobs) {
+      if (!j.scheduledStart) continue;
+      const segs = workdaySegments(new Date(j.scheduledStart), j.durationMins || WORKDAY_MINS);
+      const idx = segs.findIndex((s) => sameDay(s.start, day));
+      if (idx >= 0) {
+        out.push({
+          ...j,
+          _segStart: segs[idx].start.toISOString(),
+          _segEnd: segs[idx].end.toISOString(),
+          _dayIndex: idx,
+          _dayCount: segs.length,
+        });
+      }
+    }
+    return out.sort((a, b) => new Date(a._segStart).getTime() - new Date(b._segStart).getTime());
   }
 
   function externalForDay(day: Date) {
@@ -109,7 +126,7 @@ export default function CalendarPage() {
     const next = new Date(day);
     next.setHours(old.getHours(), old.getMinutes(), 0, 0);
     if (sameDay(old, next)) return;
-    const end = new Date(next.getTime() + (job.durationMins || 120) * 60_000);
+    const end = jobEnd(next, job.durationMins || WORKDAY_MINS);
     setJobs((prev) =>
       prev.map((j) => (j.id === job.id ? { ...j, scheduledStart: next.toISOString(), scheduledEnd: end.toISOString() } : j))
     );
@@ -188,6 +205,32 @@ export default function CalendarPage() {
             ? `${external.length} event${external.length > 1 ? "s" : ""} from your Google Calendar shown in this range`
             : "Connected — no other Google Calendar events in this range"}
         </div>
+      )}
+
+      {/* Summary of your Google Calendar events in this range */}
+      {calStatus.connected && external.length > 0 && (
+        <details className="card mb-3 p-3" open>
+          <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-stone-700">
+            <span className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-sky-400" />
+              Your calendar — {external.length} event{external.length > 1 ? "s" : ""}
+            </span>
+            <span className="text-xs font-normal text-stone-400">this {mode}</span>
+          </summary>
+          <ul className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
+            {[...external]
+              .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+              .map((e) => (
+                <li key={e.id} className="flex items-baseline gap-2 text-sm">
+                  <span className="w-28 shrink-0 text-xs font-medium text-sky-700">
+                    {new Date(e.start).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                  </span>
+                  <span className="w-12 shrink-0 text-xs text-stone-400">{externalLabel(e)}</span>
+                  <span className="min-w-0 flex-1 truncate text-stone-700">{e.title}</span>
+                </li>
+              ))}
+          </ul>
+        </details>
       )}
 
       {mode === "month" ? (
@@ -328,9 +371,14 @@ export default function CalendarPage() {
                           onDragEnd={() => setDragId(null)}
                           className="flex items-center gap-3 px-4 py-3 active:bg-stone-50"
                         >
-                          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job.scheduledStart, job.scheduledEnd)}</div>
+                          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job._segStart, job._segEnd)}</div>
                           <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-stone-900">{job.title}</p>
+                            <p className="truncate text-sm font-semibold text-stone-900">
+                              {job.title}
+                              {job._dayCount > 1 && (
+                                <span className="ml-1.5 text-xs font-normal text-stone-400">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+                              )}
+                            </p>
                             <p className="truncate text-xs text-stone-500">{job.clientName || "—"}</p>
                           </Link>
                           <StatusPill status={job.status} />
@@ -370,7 +418,7 @@ function DayList({
   draggable,
   setDragId,
 }: {
-  jobs: JobDTO[];
+  jobs: DayJob[];
   busy?: ExternalEvent[];
   busyLabel?: (e: ExternalEvent) => string;
   onReschedule: (j: JobDTO) => void;
@@ -390,9 +438,14 @@ function DayList({
           onDragEnd={() => setDragId?.(null)}
           className="flex items-center gap-3 px-4 py-3 active:bg-stone-50"
         >
-          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job.scheduledStart, job.scheduledEnd)}</div>
+          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job._segStart, job._segEnd)}</div>
           <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-stone-900">{job.title}</p>
+            <p className="truncate text-sm font-semibold text-stone-900">
+              {job.title}
+              {job._dayCount > 1 && (
+                <span className="ml-1.5 text-xs font-normal text-stone-400">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+              )}
+            </p>
             <p className="truncate text-xs text-stone-500">{job.clientName || "—"}</p>
           </Link>
           <StatusPill status={job.status} />
