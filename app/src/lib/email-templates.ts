@@ -52,3 +52,41 @@ export async function renderTemplate(
     enabled: t.enabled,
   };
 }
+
+/**
+ * Resolves the email for a specific job: starts from the global template, applies
+ * any per-company (lead-source) override, then appends the account signature.
+ */
+export async function resolveTemplate(
+  job: { leadSource?: string | null },
+  key: string,
+  vars: TemplateVars
+): Promise<{ subject: string; body: string; enabled: boolean } | null> {
+  const global = await prisma.emailTemplate.findUnique({ where: { key } });
+  if (!global) return null;
+  let subject = global.subject;
+  let body = global.body;
+
+  // Per-company override (matched by the job's sender against the lead source).
+  if (job.leadSource) {
+    const ls = job.leadSource.toLowerCase();
+    const sources = await prisma.leadSource.findMany();
+    const src = sources.find((s) => ls.includes(s.email.toLowerCase()));
+    if (src?.templates) {
+      try {
+        const ov = (JSON.parse(src.templates) || {})[key];
+        if (ov?.subject) subject = ov.subject;
+        if (ov?.body) body = ov.body;
+      } catch {
+        /* ignore malformed overrides */
+      }
+    }
+  }
+
+  let outBody = render(body, vars);
+  const account = await prisma.account.findFirst();
+  const sig = account?.signature?.trim();
+  if (sig) outBody += `\n\n${render(sig, vars)}`;
+
+  return { subject: render(subject, vars), body: outBody, enabled: global.enabled };
+}

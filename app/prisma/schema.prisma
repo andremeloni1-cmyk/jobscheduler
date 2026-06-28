@@ -22,6 +22,7 @@ model Account {
   googleEmail        String?
   calendarId         String   @default("primary")
   driveFolderId      String?  // root Drive folder where job PDFs are filed
+  signature          String?  // appended to client emails
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -145,6 +146,7 @@ model LeadSource {
   name      String
   email     String   @unique
   enabled   Boolean  @default(true)
+  templates String?  // JSON: per-company email overrides keyed by accepted|moved|cancelled
   createdAt DateTime @default(now())
 }
 

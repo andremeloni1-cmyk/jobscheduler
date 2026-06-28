@@ -4,7 +4,7 @@ import { isAuthenticated } from "@/lib/session";
 import { generateReportPdf, type ReportData } from "@/lib/pdf";
 import { uploadToJobFolder } from "@/lib/google/drive";
 import { sendEmail } from "@/lib/google/gmail";
-import { renderTemplate, jobTemplateVars } from "@/lib/email-templates";
+import { resolveTemplate, jobTemplateVars } from "@/lib/email-templates";
 import { logActivity } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
@@ -55,20 +55,31 @@ export async function POST(req: Request, { params }: Params) {
         where: { id: report.id },
         data: { driveFileId: uploaded.fileId, webViewLink: uploaded.webViewLink },
       });
-      await prisma.document.create({
-        data: {
-          jobId: job.id,
-          name: filename,
-          driveFileId: uploaded.fileId,
-          webViewLink: uploaded.webViewLink,
-          source: "report",
-        },
-      });
+      // Reuse the existing document row for this report file (regenerating a
+      // report updates the same file rather than adding another).
+      const existingDoc = await prisma.document.findFirst({ where: { jobId: job.id, name: filename } });
+      if (existingDoc) {
+        await prisma.document.update({
+          where: { id: existingDoc.id },
+          data: { driveFileId: uploaded.fileId, webViewLink: uploaded.webViewLink },
+        });
+      } else {
+        await prisma.document.create({
+          data: {
+            jobId: job.id,
+            name: filename,
+            driveFileId: uploaded.fileId,
+            webViewLink: uploaded.webViewLink,
+            source: "report",
+          },
+        });
+      }
       await logActivity(job.id, "report", "Saved maintenance report to Google Drive");
     }
 
     if (body.action === "send" && job.clientEmail) {
-      const tpl = await renderTemplate(
+      const tpl = await resolveTemplate(
+        job,
         "report",
         jobTemplateVars(job, account?.name || "The Workshop")
       );

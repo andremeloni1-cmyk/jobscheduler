@@ -5,7 +5,7 @@ import { api } from "@/lib/job";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
-  account: { name: string | null; email: string; googleEmail: string | null; calendarId: string } | null;
+  account: { name: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null } | null;
   templates: Template[];
   google: { configured: boolean; connected: boolean };
   ai?: { configured: boolean };
@@ -18,11 +18,12 @@ const TEMPLATE_LABELS: Record<string, string> = {
   report: "Maintenance report",
 };
 
-type LeadSource = { id: string; name: string; email: string; enabled: boolean };
+type LeadSource = { id: string; name: string; email: string; enabled: boolean; templates?: string | null };
 
 export default function SettingsPage() {
   const [data, setData] = useState<SettingsData | null>(null);
   const [name, setName] = useState("");
+  const [signature, setSignature] = useState("");
   const [templates, setTemplates] = useState<Template[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
   const [newSourceName, setNewSourceName] = useState("");
@@ -34,6 +35,7 @@ export default function SettingsPage() {
     const d = await api<SettingsData>("/api/settings");
     setData(d);
     setName(d.account?.name || "");
+    setSignature(d.account?.signature || "");
     setTemplates(d.templates);
     try {
       const ls = await api<{ sources: LeadSource[] }>("/api/lead-sources");
@@ -84,7 +86,7 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", {
         method: "PATCH",
-        body: JSON.stringify({ account: { name }, templates }),
+        body: JSON.stringify({ account: { name, signature }, templates }),
       });
       setMsg("Saved ✓");
     } finally {
@@ -186,20 +188,23 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-2">
           {sources.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 rounded-xl bg-stone-50 px-3 py-2.5">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-stone-800">{s.name}</p>
-                <p className="truncate text-xs text-stone-500">{s.email}</p>
+            <div key={s.id} className="rounded-xl bg-stone-50 px-3 py-2.5">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-stone-800">{s.name}</p>
+                  <p className="truncate text-xs text-stone-500">{s.email}</p>
+                </div>
+                <label className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <input type="checkbox" checked={s.enabled} onChange={() => toggleSource(s)} className="h-4 w-4 accent-brand-600" />
+                  On
+                </label>
+                <button onClick={() => deleteSource(s)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-200" aria-label="Remove">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                  </svg>
+                </button>
               </div>
-              <label className="flex items-center gap-1.5 text-xs text-stone-500">
-                <input type="checkbox" checked={s.enabled} onChange={() => toggleSource(s)} className="h-4 w-4 accent-brand-600" />
-                On
-              </label>
-              <button onClick={() => deleteSource(s)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-200" aria-label="Remove">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                </svg>
-              </button>
+              <SourceTemplates source={s} />
             </div>
           ))}
           {sources.length === 0 && <p className="text-sm text-stone-400">No senders yet — add one below.</p>}
@@ -216,6 +221,15 @@ export default function SettingsPage() {
         <h2 className="mb-3 font-semibold text-stone-900">Your business</h2>
         <label className="label">Name (used in emails & reports)</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meloni Joinery" />
+        <label className="label mt-3">Email signature</label>
+        <textarea
+          className="input"
+          rows={3}
+          value={signature}
+          onChange={(e) => setSignature(e.target.value)}
+          placeholder={"Added to the bottom of every client email, e.g.\nMeloni Joinery\n0400 000 000"}
+        />
+        <p className="mt-1 text-xs text-stone-400">Appended to all automated client emails. Save settings to apply.</p>
       </div>
 
       {/* Email templates */}
@@ -276,5 +290,71 @@ export default function SettingsPage() {
 
       <p className="mt-6 text-center text-xs text-stone-300">JoineryFlow · v1.0</p>
     </div>
+  );
+}
+
+type Override = { subject?: string; body?: string };
+const OVERRIDE_KEYS: { key: string; label: string }[] = [
+  { key: "accepted", label: "Job confirmed" },
+  { key: "moved", label: "Rescheduled" },
+  { key: "cancelled", label: "Cancelled" },
+];
+
+/** Per-company email wording overrides. Blank fields fall back to the defaults. */
+function SourceTemplates({ source }: { source: LeadSource }) {
+  const [tpl, setTpl] = useState<Record<string, Override>>(() => {
+    try {
+      return source.templates ? JSON.parse(source.templates) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const setField = (k: string, f: keyof Override, v: string) =>
+    setTpl((p) => ({ ...p, [k]: { ...(p[k] || {}), [f]: v } }));
+
+  async function save() {
+    setSaving(true);
+    try {
+      await api(`/api/lead-sources/${source.id}`, { method: "PATCH", body: JSON.stringify({ templates: tpl }) });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <details className="mt-2 rounded-lg border border-stone-200 bg-white">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-600">Custom emails for this client</summary>
+      <div className="space-y-3 px-3 pb-3">
+        <p className="text-xs text-stone-400">
+          Leave blank to use the defaults. Placeholders like <code>{"{{clientName}}"}</code> and <code>{"{{startDate}}"}</code> work here too.
+        </p>
+        {OVERRIDE_KEYS.map(({ key, label }) => (
+          <div key={key}>
+            <p className="text-xs font-semibold text-stone-600">{label}</p>
+            <input
+              className="input mt-1"
+              placeholder="Subject (optional)"
+              value={tpl[key]?.subject || ""}
+              onChange={(e) => setField(key, "subject", e.target.value)}
+            />
+            <textarea
+              className="input mt-1"
+              rows={3}
+              placeholder="Body (optional)"
+              value={tpl[key]?.body || ""}
+              onChange={(e) => setField(key, "body", e.target.value)}
+            />
+          </div>
+        ))}
+        <button className="btn-secondary w-full" onClick={save} disabled={saving}>
+          {saving ? "Saving…" : saved ? "Saved ✓" : "Save custom emails"}
+        </button>
+      </div>
+    </details>
   );
 }
