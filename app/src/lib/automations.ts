@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
-import { upsertJobEvent, deleteJobEvent } from "@/lib/google/calendar";
+import { upsertJobEvent, deleteJobEvent, listJobEventStarts } from "@/lib/google/calendar";
 import { sendEmail } from "@/lib/google/gmail";
 import { findJobPdfAttachments } from "@/lib/google/gmail";
 import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
 import { jobTemplateVars, resolveTemplate } from "@/lib/email-templates";
 import { isScheduledStatus } from "@/lib/types";
+import { jobEnd, businessTimeZone, WORK_START_HOUR, WORK_START_MIN } from "@/lib/schedule";
 import type { Job } from "@prisma/client";
 
 async function ownerName(): Promise<string> {
@@ -200,4 +201,56 @@ export async function onStatusChange(
 export async function onReschedule(job: Job, notify = true): Promise<void> {
   await syncCalendar(job);
   if (notify) await sendClientEmail(job, "moved");
+}
+
+// Wall-clock helpers for two-way sync. The app stores scheduledStart as a
+// "floating" local time; events are tagged with the business timezone. We compare
+// the event's business-tz date to the job's stored local date so server-vs-business
+// timezone differences don't cause false "moved" detections.
+function localYMD(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function tzParts(d: Date, tz: string): { y: number; m: number; d: number; h: number; min: number } {
+  const f = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+  });
+  const parts = Object.fromEntries(f.formatToParts(d).map((p) => [p.type, p.value]));
+  return { y: +parts.year, m: +parts.month, d: +parts.day, h: +(parts.hour === "24" ? "0" : parts.hour), min: +parts.minute };
+}
+
+/**
+ * Two-way sync: if the owner moved a job's event to another day directly in
+ * Google Calendar, reflect that back onto the job (and realign multi-day events).
+ * Compares by day; same-day (e.g. a small time nudge) is ignored. Returns the
+ * number of jobs updated.
+ */
+export async function syncFromCalendar(): Promise<{ updated: number }> {
+  const starts = await listJobEventStarts();
+  if (starts.size === 0) return { updated: 0 };
+  const tz = businessTimeZone();
+  let updated = 0;
+
+  for (const [jobId, info] of starts) {
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || !job.scheduledStart || !isScheduledStatus(job.status)) continue;
+
+    const p = tzParts(info.start, tz);
+    const eventDay = `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
+    const jobDay = localYMD(new Date(job.scheduledStart));
+    if (eventDay === jobDay) continue; // unchanged (or only a within-day time tweak)
+
+    // Rebuild the floating start from the event's business-tz wall clock.
+    const h = info.allDay ? WORK_START_HOUR : p.h;
+    const min = info.allDay ? WORK_START_MIN : p.min;
+    const newStart = new Date(p.y, p.m - 1, p.d, h, min, 0);
+    const fresh = await prisma.job.update({
+      where: { id: job.id },
+      data: { scheduledStart: newStart, scheduledEnd: jobEnd(newStart, job.durationMins) },
+    });
+    await logActivity(job.id, "calendar", `Moved in Google Calendar — updated to ${eventDay}`);
+    await syncCalendar(fresh); // realign all working-day events to the new start
+    updated++;
+  }
+  return { updated };
 }

@@ -146,8 +146,20 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight text-stone-900">JoineryFlow</h1>
           <p className="text-sm text-stone-500">Your jobs at a glance</p>
         </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-sm">
-          <SawIcon />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/activity"
+            aria-label="Activity"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-stone-500 ring-1 ring-stone-200"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 8v4l3 2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="12" cy="12" r="9" />
+            </svg>
+          </Link>
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-sm">
+            <SawIcon />
+          </div>
         </div>
       </header>
 

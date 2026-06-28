@@ -63,7 +63,19 @@ export default function CalendarPage() {
     }
   }
   useEffect(() => {
-    load();
+    (async () => {
+      // Reflect any jobs moved directly in Google Calendar before showing them.
+      try {
+        const r = await api<{ updated?: number }>("/api/calendar/sync", { method: "POST" });
+        if (r.updated && r.updated > 0) {
+          setHint(`Synced ${r.updated} change${r.updated > 1 ? "s" : ""} from Google Calendar`);
+          setTimeout(() => setHint(null), 3500);
+        }
+      } catch {
+        /* sync is best-effort */
+      }
+      await load();
+    })();
   }, []);
 
   // Pull the owner's existing Google Calendar events for the visible range so

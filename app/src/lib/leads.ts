@@ -220,6 +220,14 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
       .catch(() => {});
   }
 
+  // Record the scan itself in the activity feed (no job attached).
+  await logActivity(
+    null,
+    "scan",
+    `Inbox checked — ${created} new, ${plans} plans attached, ${flagged} flagged for review`,
+    { created, plans, flagged, companies: latest.size }
+  );
+
   return { created, connected: true, flagged, plans };
 }
 
