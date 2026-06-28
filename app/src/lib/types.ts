@@ -1,8 +1,10 @@
 // Shared constants and helpers for job statuses & lifecycle.
 
+// Lifecycle: an incoming job is "lead" (To confirm) until the owner confirms it
+// → accepted → scheduled → in_progress → completed (cancelled from any state).
+// There is no quoting step — jobs only need confirming.
 export const JOB_STATUSES = [
   "lead",
-  "quoted",
   "accepted",
   "scheduled",
   "in_progress",
@@ -13,9 +15,8 @@ export const JOB_STATUSES = [
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
-  lead: "Lead",
-  quoted: "Quoted",
-  accepted: "Accepted",
+  lead: "To confirm",
+  accepted: "Confirmed",
   scheduled: "Scheduled",
   in_progress: "In progress",
   completed: "Completed",
@@ -24,8 +25,7 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
 
 // Tailwind classes for status pills.
 export const STATUS_STYLES: Record<JobStatus, string> = {
-  lead: "bg-stone-100 text-stone-600 ring-stone-200",
-  quoted: "bg-sky-50 text-sky-700 ring-sky-200",
+  lead: "bg-amber-50 text-amber-700 ring-amber-200",
   accepted: "bg-emerald-50 text-emerald-700 ring-emerald-200",
   scheduled: "bg-brand-100 text-brand-800 ring-brand-200",
   in_progress: "bg-amber-50 text-amber-700 ring-amber-200",

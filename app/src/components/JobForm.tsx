@@ -142,7 +142,7 @@ export function JobForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Quote (A$)</label>
+          <label className="label">Value (A$)</label>
           <input className="input" type="number" inputMode="decimal" value={v.quoteAmount} onChange={set("quoteAmount")} />
         </div>
         <div>
