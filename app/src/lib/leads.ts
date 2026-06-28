@@ -4,6 +4,9 @@ import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
 import { logActivity } from "@/lib/automations";
 import { nextReference } from "@/lib/utils";
+import { analyzeJobImages, visionConfigured } from "@/lib/vision";
+
+const IMAGE_RE = /^image\//i;
 
 /**
  * Scans the mailbox for new emails from the configured trusted senders and
@@ -24,11 +27,29 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
     const exists = await prisma.job.findUnique({ where: { gmailMessageId: m.messageId } });
     if (exists) continue;
 
-    const description = (m.body || m.snippet || "").slice(0, 1500);
+    let title = m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry";
+    let description = (m.body || m.snippet || "").slice(0, 1500);
+
+    // Feature: read image attachments (e.g. mii Kitchens' PNG job sheets) with
+    // AI vision and fold the extracted details into the lead.
+    const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
+    if (imageAttachments.length > 0 && visionConfigured()) {
+      const read = await analyzeJobImages(
+        imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType }))
+      );
+      if (read) {
+        if (read.title && (!title || title === "New enquiry")) title = read.title;
+        description = [read.description, description && `— Email —\n${description}`]
+          .filter(Boolean)
+          .join("\n\n")
+          .slice(0, 4000);
+      }
+    }
+
     const job = await prisma.job.create({
       data: {
         reference: await nextReference(),
-        title: m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry",
+        title,
         description,
         status: "lead",
         clientName: m.fromName,
@@ -38,6 +59,10 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
         gmailThreadId: m.threadId,
       },
     });
+
+    if (imageAttachments.length > 0 && visionConfigured()) {
+      await logActivity(job.id, "lead", `Read ${imageAttachments.length} image(s) with AI to extract job details`);
+    }
 
     // File any attached PDFs into the job's Drive folder.
     for (const att of m.attachments) {

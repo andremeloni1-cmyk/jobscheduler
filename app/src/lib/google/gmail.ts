@@ -194,7 +194,9 @@ export async function findLeadMessages(
 
     const attachments: FoundAttachment[] = [];
     for (const part of flattenParts(payload)) {
-      if (part.filename && part.filename.toLowerCase().endsWith(".pdf") && part.body?.attachmentId) {
+      const name = (part.filename || "").toLowerCase();
+      const isJobFile = /\.(pdf|png|jpe?g|gif|webp)$/.test(name);
+      if (part.filename && isJobFile && part.body?.attachmentId) {
         const att = await gmail.users.messages.attachments.get({
           userId: "me",
           messageId: msg.id!,
