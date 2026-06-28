@@ -68,16 +68,19 @@ export async function extractJobsFromEmail(input: {
   content.push({
     type: "text",
     text:
-      "This is a job enquiry email (with any attached images) from a kitchen/joinery company. " +
-      "It may describe ONE OR MORE separate jobs (e.g. different sites, rooms, or line items). " +
-      "Identify each DISTINCT job and extract it. For each job capture: a short title; a description " +
-      "with all relevant details (measurements, materials, quantities, room/area, reference numbers); " +
-      "the site address if stated; a date (YYYY-MM-DD) and time (HH:mm, 24h) ONLY if explicitly given; " +
-      "and an estimated durationMins if obvious. Do not invent dates, addresses, or measurements that " +
-      "aren't present.\n\n" +
+      "This is an email (with any attached images/PDFs) from a kitchen/joinery company. " +
+      "Your task: identify only GENUINELY NEW jobs that need to be booked in / installed.\n\n" +
+      "IMPORTANT — do NOT create jobs from, and return an EMPTY array for, emails that are: " +
+      "maintenance reports or requests for a maintenance report; requests to send photos/images/" +
+      "invoices/paperwork; cancellations or postponements; confirmations or general correspondence; " +
+      "or anything that isn't new work to schedule. When in doubt, leave it out.\n\n" +
+      "For each NEW job capture: a short title (include the quote/reference number like QU#### if shown); " +
+      "a description with all relevant details (measurements, materials, quantities, room/area); the site " +
+      "address if stated; a date (YYYY-MM-DD) and time (HH:mm, 24h) ONLY if explicitly given; and an " +
+      "estimated durationMins if obvious. Never invent dates, addresses, or measurements not present.\n\n" +
       `Email subject: ${input.subject}\n\nEmail body:\n${input.body || "(no text body)"}\n\n` +
       "Respond as JSON: { jobs: [ { title, description, address, date, time, durationMins } ] }. " +
-      "If it's really just one job, return a single-element array.",
+      "Return an empty array if there are no new bookable jobs.",
   });
 
   try {

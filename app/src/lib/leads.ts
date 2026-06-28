@@ -7,6 +7,8 @@ import { nextReference } from "@/lib/utils";
 import { extractJobsFromEmail, visionConfigured } from "@/lib/vision";
 
 const IMAGE_RE = /^image\//i;
+// Subjects that are clearly NOT new jobs to book (common misspellings included).
+const NON_JOB_RE = /\b(maintenance|maintanance|maintenence|mantenance|mantanace|matanance|mantanance)\b/i;
 
 /**
  * Scans the mailbox for new emails from the configured trusted senders and
@@ -24,10 +26,21 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
 
   let created = 0;
   for (const m of messages) {
-    // Dedup at the email level: if any job already came from this message, skip
-    // the whole email (it may have produced several jobs).
+    // Dedup at the email level: skip if already scanned (even if it produced no
+    // jobs) or already imported as job(s).
+    const seen = await prisma.processedEmail.findUnique({ where: { messageId: m.messageId } });
+    if (seen) continue;
     const exists = await prisma.job.findFirst({ where: { gmailMessageId: m.messageId } });
     if (exists) continue;
+
+    const markProcessed = (jobsCreated: number, reason?: string) =>
+      prisma.processedEmail.create({ data: { messageId: m.messageId, jobsCreated, reason } }).catch(() => {});
+
+    // Maintenance / non-job emails are never bookable jobs — skip without AI.
+    if (NON_JOB_RE.test(m.subject || "")) {
+      await markProcessed(0, "maintenance");
+      continue;
+    }
 
     const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
     const pdfAttachments = m.attachments.filter(
@@ -43,6 +56,12 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
         images: imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
         pdfs: pdfAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
       });
+    }
+
+    // AI ran and judged there are no new bookable jobs (report request, etc.).
+    if (extracted !== null && extracted.length === 0) {
+      await markProcessed(0, "no_new_jobs");
+      continue;
     }
 
     // Build the list of jobs to create — AI-split, or a single fallback lead.
@@ -123,6 +142,8 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
           : `Imported from email — ${m.fromName} <${m.fromEmail}>`;
       await logActivity(primary.id, "lead", note, { messageId: m.messageId, jobs: createdJobs.length });
     }
+
+    await markProcessed(createdJobs.length);
   }
 
   return { created, connected: true };
