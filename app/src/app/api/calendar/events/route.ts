@@ -11,7 +11,14 @@ export async function GET(req: Request) {
   const end = parseDate(searchParams.get("end"));
   if (!start || !end) return json({ error: "start and end are required" }, 400);
 
-  const events = await listEvents(start, end);
-  if (events === null) return json({ connected: false, events: [] });
-  return json({ connected: true, events });
+  try {
+    const events = await listEvents(start, end);
+    if (events === null) return json({ connected: false, events: [] });
+    return json({ connected: true, events });
+  } catch (e) {
+    // Surface the reason (e.g. Calendar API disabled, scope missing) instead of
+    // silently showing nothing.
+    const message = e instanceof Error ? e.message : "Failed to load calendar";
+    return json({ connected: true, error: message, events: [] });
+  }
 }

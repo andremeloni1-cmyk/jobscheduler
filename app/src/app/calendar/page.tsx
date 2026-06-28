@@ -31,6 +31,7 @@ type ExternalEvent = { id: string; title: string; start: string; end: string; al
 export default function CalendarPage() {
   const [jobs, setJobs] = useState<JobDTO[]>([]);
   const [external, setExternal] = useState<ExternalEvent[]>([]);
+  const [calStatus, setCalStatus] = useState<{ connected: boolean; error?: string }>({ connected: false });
   const [mode, setMode] = useState<"month" | "week">("month");
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -66,12 +67,17 @@ export default function CalendarPage() {
     let active = true;
     (async () => {
       try {
-        const res = await api<{ connected: boolean; events: ExternalEvent[] }>(
+        const res = await api<{ connected: boolean; error?: string; events: ExternalEvent[] }>(
           `/api/calendar/events?start=${rangeStart.toISOString()}&end=${rangeEnd.toISOString()}`
         );
-        if (active) setExternal(res.events || []);
+        if (!active) return;
+        setExternal(res.events || []);
+        setCalStatus({ connected: res.connected, error: res.error });
       } catch {
-        if (active) setExternal([]);
+        if (active) {
+          setExternal([]);
+          setCalStatus({ connected: false });
+        }
       }
     })();
     return () => {
@@ -166,6 +172,24 @@ export default function CalendarPage() {
 
       {hint && <div className="mb-3 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{hint}</div>}
 
+      {/* Google Calendar status */}
+      {!calStatus.connected ? (
+        <div className="mb-3 rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          Connect Google in <Link href="/settings" className="font-semibold underline">Settings</Link> to see your existing calendar events here.
+        </div>
+      ) : calStatus.error ? (
+        <div className="mb-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          Couldn’t load your Google Calendar: {calStatus.error}. Make sure the Calendar API is enabled, then try Disconnect &amp; Connect in Settings.
+        </div>
+      ) : (
+        <div className="mb-3 flex items-center gap-2 text-xs text-stone-400">
+          <span className="h-2 w-2 rounded-full bg-sky-400" />
+          {external.length > 0
+            ? `${external.length} event${external.length > 1 ? "s" : ""} from your Google Calendar shown in this range`
+            : "Connected — no other Google Calendar events in this range"}
+        </div>
+      )}
+
       {mode === "month" ? (
         <>
           {/* Month nav */}
@@ -232,7 +256,7 @@ export default function CalendarPage() {
                     ))}
                     {dayJobs.length > 3 && <span className="text-[9px] leading-none text-stone-400">+{dayJobs.length - 3}</span>}
                     {dayBusy.length > 0 && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-stone-300" title={`${dayBusy.length} calendar event(s)`} />
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-400" title={`${dayBusy.length} calendar event(s)`} />
                     )}
                   </span>
                 </button>
@@ -316,10 +340,10 @@ export default function CalendarPage() {
                         </li>
                       ))}
                       {dayBusy.map((e) => (
-                        <li key={e.id} className="flex items-center gap-3 px-4 py-2.5">
-                          <div className="w-14 shrink-0 text-xs font-medium text-stone-400">{externalLabel(e)}</div>
-                          <span className="min-w-0 flex-1 truncate text-sm text-stone-400">{e.title}</span>
-                          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">Busy</span>
+                        <li key={e.id} className="flex items-center gap-3 border-l-4 border-sky-300 px-4 py-2.5">
+                          <div className="w-14 shrink-0 text-xs font-medium text-sky-700">{externalLabel(e)}</div>
+                          <span className="min-w-0 flex-1 truncate text-sm text-sky-800">{e.title}</span>
+                          <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600">Busy</span>
                         </li>
                       ))}
                     </ul>
@@ -378,10 +402,10 @@ function DayList({
         </div>
       ))}
       {busy.map((e) => (
-        <div key={e.id} className="flex items-center gap-3 px-4 py-2.5">
-          <div className="w-14 shrink-0 text-xs font-medium text-stone-400">{busyLabel ? busyLabel(e) : ""}</div>
-          <span className="min-w-0 flex-1 truncate text-sm text-stone-400">{e.title}</span>
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">Busy</span>
+        <div key={e.id} className="flex items-center gap-3 border-l-4 border-sky-300 px-4 py-2.5">
+          <div className="w-14 shrink-0 text-xs font-medium text-sky-700">{busyLabel ? busyLabel(e) : ""}</div>
+          <span className="min-w-0 flex-1 truncate text-sm text-sky-800">{e.title}</span>
+          <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600">Busy</span>
         </div>
       ))}
     </div>
