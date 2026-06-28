@@ -124,6 +124,16 @@ model Activity {
   createdAt DateTime @default(now())
 }
 
+// Record of every lead email we've already scanned (even if it produced no
+// jobs), so non-job emails aren't reprocessed (and re-charged) every scan.
+model ProcessedEmail {
+  id          String   @id @default(cuid())
+  messageId   String   @unique
+  jobsCreated Int      @default(0)
+  reason      String?  // e.g. "maintenance", "no_new_jobs"
+  createdAt   DateTime @default(now())
+}
+
 // Trusted senders whose emails are turned into job leads to approve.
 model LeadSource {
   id        String   @id @default(cuid())
