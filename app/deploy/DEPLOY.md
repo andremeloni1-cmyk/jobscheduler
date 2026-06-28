@@ -47,6 +47,19 @@ your home screen (it's a PWA — it behaves like an app).
    `https://jobs.yourdomain.com/api/auth/google/callback`.
 3. `pm2 reload joineryflow` then **Settings → Connect Google account**.
 
+## Enable automatic inbox checking (incoming job leads)
+
+Emails from trusted senders (managed in **Settings → Incoming jobs**) become job
+leads to approve. To have the app check the inbox automatically every 15 minutes:
+
+```bash
+cd /root/jobscheduler/app && sudo bash deploy/setup-cron.sh
+```
+
+This generates a `CRON_SECRET`, restarts the app, and installs a cron entry. You
+can always trigger a check by hand with **Check inbox for new jobs** on the Jobs
+screen.
+
 ## Updating later
 
 ```bash

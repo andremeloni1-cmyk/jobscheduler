@@ -36,5 +36,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Gate everything except the login page, the login API, and static assets.
-  matcher: ["/((?!login|api/auth/login|_next/static|_next/image|favicon.ico|manifest.webmanifest|icon.svg).*)"],
+  matcher: ["/((?!login|api/auth/login|api/leads/scan|_next/static|_next/image|favicon.ico|manifest.webmanifest|icon.svg).*)"],
 };

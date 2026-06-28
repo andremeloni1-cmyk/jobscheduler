@@ -126,6 +126,14 @@ export default function JobDetailPage() {
           <StatusPill status={job.status} />
         </div>
         <p className="mt-1 text-sm text-stone-500">{job.reference}</p>
+        {job.leadSource && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
+            </svg>
+            Imported from email · {job.leadSource}
+          </div>
+        )}
       </div>
 
       {/* Primary actions */}

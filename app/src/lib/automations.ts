@@ -38,6 +38,11 @@ async function jobDocLinks(jobId: string): Promise<string[]> {
  */
 export async function syncCalendar(job: Job): Promise<void> {
   if (!isScheduledStatus(job.status)) return;
+  // Don't put undated jobs on the calendar — wait until a start time is set.
+  if (!job.scheduledStart) {
+    await logActivity(job.id, "calendar", "Accepted — add a date to put it on the calendar");
+    return;
+  }
   const links = await jobDocLinks(job.id);
   const eventId = await upsertJobEvent(job, links);
   if (eventId && eventId !== job.googleEventId) {

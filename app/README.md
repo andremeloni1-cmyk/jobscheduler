@@ -15,6 +15,7 @@ APIs (Calendar, Drive, Gmail).
 | 3 | **Save job PDFs from email → Google Drive, openable from the event** | *Find in email* searches Gmail for the job's PDFs, files them in a per-job Drive folder, and embeds the links in the calendar event description so they open straight from the event. |
 | 4 | **Automated client emails** | Accept / move / cancel each send a templated email from your Gmail. Templates are fully editable in Settings. |
 | 5 | **Maintenance reports per job** | Fill out a report, generate a branded PDF, save it to Drive and email it to the client in one tap. |
+| 6 | **Incoming jobs to approve** | Watches your inbox for emails from trusted senders (managed in Settings), turns each into a lead with PDFs filed to Drive, and lists them to Approve (accept + auto-confirm) or Dismiss. Auto-checks every 15 min (cron) plus a manual button. |
 
 ### Demo mode
 
