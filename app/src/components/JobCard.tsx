@@ -5,6 +5,13 @@ import { StatusPill } from "./StatusPill";
 import { fmtMoney, fmtDay, fmtRange } from "@/lib/format";
 import type { JobDTO } from "@/lib/job";
 
+/** A confirmed/scheduled job that still has no PDF plan on file. */
+function awaitingPlans(job: JobDTO): boolean {
+  if (!["accepted", "scheduled", "in_progress"].includes(job.status)) return false;
+  const docs = job.documents || [];
+  return !docs.some((d) => /\.pdf$/i.test(d.name));
+}
+
 export function JobCard({ job }: { job: JobDTO }) {
   return (
     <Link href={`/jobs/${job.id}`} className="block">
@@ -36,11 +43,14 @@ export function JobCard({ job }: { job: JobDTO }) {
           )}
         </div>
 
-        {(job.address || (job.documents && job.documents.length > 0)) && (
-          <div className="mt-2 flex items-center gap-3 text-xs text-stone-400">
+        {(job.address || (job.documents && job.documents.length > 0) || awaitingPlans(job)) && (
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-400">
             {job.address && <span className="inline-flex items-center gap-1 truncate"><PinIcon /> {job.address}</span>}
             {job.documents && job.documents.length > 0 && (
               <span className="inline-flex items-center gap-1">📎 {job.documents.length}</span>
+            )}
+            {awaitingPlans(job) && (
+              <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">Awaiting plans</span>
             )}
           </div>
         )}

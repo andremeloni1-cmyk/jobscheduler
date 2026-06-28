@@ -72,6 +72,10 @@ model Job {
   gmailMessageId String?  // source email (shared by all jobs split from one email)
   gmailThreadId  String?
 
+  // Review flag set by intake reconciliation (e.g. "review" = the job's company
+  // sent a weekly email that no longer lists it — possibly moved/cancelled).
+  flag           String?
+
   // Google links
   googleEventId  String?  // primary calendar event (first working day)
   googleEventIds String?  // JSON array of all calendar event ids (one per working day)
