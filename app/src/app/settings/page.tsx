@@ -51,9 +51,14 @@ export default function SettingsPage() {
     await api(`/api/lead-sources/${s.id}`, { method: "PATCH", body: JSON.stringify({ enabled: !s.enabled }) });
   }
   async function deleteSource(s: LeadSource) {
-    if (!confirm(`Stop watching ${s.email}?`)) return;
+    // Optimistically remove; reload from the server if the delete fails so the
+    // list reflects real state. (No window.confirm — unreliable in standalone PWAs.)
     setSources((prev) => prev.filter((x) => x.id !== s.id));
-    await api(`/api/lead-sources/${s.id}`, { method: "DELETE" });
+    try {
+      await api(`/api/lead-sources/${s.id}`, { method: "DELETE" });
+    } catch {
+      load();
+    }
   }
   async function addSource() {
     const email = newSourceEmail.trim().toLowerCase();

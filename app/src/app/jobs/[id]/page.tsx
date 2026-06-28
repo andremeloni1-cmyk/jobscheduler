@@ -30,6 +30,7 @@ export default function JobDetailPage() {
   const [editing, setEditing] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   async function load() {
@@ -79,9 +80,18 @@ export default function JobDetailPage() {
 
   async function remove() {
     if (!job) return;
-    if (!confirm(`Delete "${job.title}"? This also removes its calendar event.`)) return;
-    await api(`/api/jobs/${job.id}`, { method: "DELETE" });
-    router.push("/");
+    // Two-tap inline confirm (window.confirm is unreliable in standalone PWAs).
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      await api(`/api/jobs/${job.id}`, { method: "DELETE" });
+      router.push("/");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function rereadImages() {
@@ -307,10 +317,24 @@ export default function JobDetailPage() {
         <button className="btn-secondary flex-1" onClick={() => setEditing(true)}>
           Edit job
         </button>
-        <button className="btn-danger" onClick={remove}>
-          Delete
-        </button>
+        {confirmDelete ? (
+          <>
+            <button className="btn-danger" disabled={busy} onClick={remove}>
+              {busy ? "Deleting…" : "Confirm delete"}
+            </button>
+            <button className="btn-ghost text-stone-500" disabled={busy} onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button className="btn-danger" onClick={remove}>
+            Delete
+          </button>
+        )}
       </div>
+      {confirmDelete && (
+        <p className="mt-2 text-right text-xs text-stone-400">This also removes its calendar event.</p>
+      )}
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit job">
         <JobForm job={job} onSubmit={saveEdit} onCancel={() => setEditing(false)} />
