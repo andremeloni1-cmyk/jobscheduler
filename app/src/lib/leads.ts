@@ -143,13 +143,12 @@ const DEFAULT_SOURCES = [
   { name: "Peter Baldwin (Ingenuity Joinery)", email: "ingenuityjoinery.com" },
 ];
 
-/** Ensures the user's three default trusted senders exist (idempotent). */
+/** Seeds the default trusted senders, but ONLY on first run (empty table).
+ * Re-seeding on every load would make deleted senders reappear. */
 export async function ensureDefaultLeadSources(): Promise<void> {
+  const count = await prisma.leadSource.count();
+  if (count > 0) return;
   for (const s of DEFAULT_SOURCES) {
-    await prisma.leadSource.upsert({
-      where: { email: s.email },
-      update: {},
-      create: s,
-    });
+    await prisma.leadSource.create({ data: s }).catch(() => {});
   }
 }
