@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusPill } from "@/components/StatusPill";
 import { RescheduleModal } from "@/components/RescheduleModal";
+import { WorkloadCard } from "@/components/WorkloadCard";
 import { Modal } from "@/components/Modal";
 import { fmtRange, fmtDay } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
@@ -201,6 +202,9 @@ export default function CalendarPage() {
       </header>
 
       {hint && <div className="mb-3 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{hint}</div>}
+
+      {/* Upcoming workload */}
+      {jobs.length > 0 && <WorkloadCard jobs={jobs} />}
 
       {/* Company colour key */}
       {companies.length > 0 && (

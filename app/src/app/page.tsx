@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { JobCard } from "@/components/JobCard";
 import { Modal } from "@/components/Modal";
 import { JobForm } from "@/components/JobForm";
 import { LeadInbox } from "@/components/LeadInbox";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
+import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
 
 const FILTERS = ["active", ...JOB_STATUSES] as const;
 
@@ -82,6 +84,16 @@ export default function DashboardPage() {
     );
   }, [jobs]);
 
+  // How many confirmed jobs are on site today (for the run-sheet shortcut).
+  const todayCount = useMemo(() => {
+    const t = new Date();
+    const same = (a: Date) => a.getFullYear() === t.getFullYear() && a.getMonth() === t.getMonth() && a.getDate() === t.getDate();
+    return jobs.filter((j) => {
+      if (!j.scheduledStart || !["accepted", "scheduled", "in_progress"].includes(j.status)) return false;
+      return workdaySegments(new Date(j.scheduledStart), j.durationMins || WORKDAY_MINS).some((s) => same(s.start));
+    }).length;
+  }, [jobs]);
+
   function flash(m: string) {
     setToast(m);
     setTimeout(() => setToast(null), 3500);
@@ -126,6 +138,20 @@ export default function DashboardPage() {
           {toast}
         </div>
       )}
+
+      {/* Today's run sheet shortcut */}
+      <Link
+        href="/today"
+        className="mb-4 flex items-center justify-between rounded-2xl bg-brand-600 px-4 py-3.5 text-white shadow-sm transition active:scale-[0.99]"
+      >
+        <div>
+          <p className="text-sm font-semibold">Today’s run sheet</p>
+          <p className="text-xs text-white/80">
+            {todayCount > 0 ? `${todayCount} job${todayCount === 1 ? "" : "s"} on site today` : "Nothing scheduled today"}
+          </p>
+        </div>
+        <span className="text-lg">→</span>
+      </Link>
 
       {/* Jobs to confirm */}
       {leads.length > 0 && (
