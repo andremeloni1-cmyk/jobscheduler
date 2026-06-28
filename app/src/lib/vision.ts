@@ -22,6 +22,98 @@ function mediaType(mime: string): "image/png" | "image/jpeg" | "image/gif" | "im
   return SUPPORTED[mime.toLowerCase()] || null;
 }
 
+export type ExtractedJob = {
+  title: string;
+  description: string;
+  address?: string;
+  date?: string; // YYYY-MM-DD if a date is stated
+  time?: string; // HH:mm 24h if a time is stated
+  durationMins?: number;
+};
+
+/**
+ * Reads a job enquiry email (text + any attached images) and splits it into the
+ * separate jobs it contains, each with its own details. Returns null when AI is
+ * not configured or on error, [] when no jobs could be extracted.
+ */
+export async function extractJobsFromEmail(input: {
+  subject: string;
+  body: string;
+  images: JobImage[];
+}): Promise<ExtractedJob[] | null> {
+  if (!visionConfigured()) return null;
+
+  const client = new Anthropic();
+  const model = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+
+  const content: Anthropic.ContentBlockParam[] = input.images
+    .map((img) => ({ ...img, media: mediaType(img.mimeType) }))
+    .filter((img) => img.media)
+    .map((img) => ({
+      type: "image" as const,
+      source: { type: "base64" as const, media_type: img.media!, data: img.data.toString("base64") },
+    }));
+
+  content.push({
+    type: "text",
+    text:
+      "This is a job enquiry email (with any attached images) from a kitchen/joinery company. " +
+      "It may describe ONE OR MORE separate jobs (e.g. different sites, rooms, or line items). " +
+      "Identify each DISTINCT job and extract it. For each job capture: a short title; a description " +
+      "with all relevant details (measurements, materials, quantities, room/area, reference numbers); " +
+      "the site address if stated; a date (YYYY-MM-DD) and time (HH:mm, 24h) ONLY if explicitly given; " +
+      "and an estimated durationMins if obvious. Do not invent dates, addresses, or measurements that " +
+      "aren't present.\n\n" +
+      `Email subject: ${input.subject}\n\nEmail body:\n${input.body || "(no text body)"}\n\n` +
+      "Respond as JSON: { jobs: [ { title, description, address, date, time, durationMins } ] }. " +
+      "If it's really just one job, return a single-element array.",
+  });
+
+  try {
+    const res = await client.messages.create({
+      model,
+      max_tokens: 2000,
+      messages: [{ role: "user", content }],
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: {
+            type: "object",
+            properties: {
+              jobs: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    address: { type: "string" },
+                    date: { type: "string" },
+                    time: { type: "string" },
+                    durationMins: { type: "number" },
+                  },
+                  required: ["title", "description"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["jobs"],
+            additionalProperties: false,
+          },
+        },
+      },
+    } as Anthropic.MessageCreateParamsNonStreaming);
+
+    if (res.stop_reason === "refusal") return null;
+    const text = res.content.find((b) => b.type === "text");
+    if (!text || text.type !== "text") return null;
+    const parsed = JSON.parse(text.text) as { jobs?: ExtractedJob[] };
+    return Array.isArray(parsed.jobs) ? parsed.jobs.slice(0, 20) : [];
+  } catch {
+    return null;
+  }
+}
+
 export async function analyzeJobImages(
   images: JobImage[]
 ): Promise<{ title?: string; description: string } | null> {
