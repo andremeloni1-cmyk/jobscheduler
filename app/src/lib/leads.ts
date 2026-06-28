@@ -8,65 +8,86 @@ import { extractJobsFromEmail, visionConfigured } from "@/lib/vision";
 import { WORKDAY_MINS, jobEnd } from "@/lib/schedule";
 
 const IMAGE_RE = /^image\//i;
+const PDF_RE = (name: string, mime: string) => mime === "application/pdf" || /\.pdf$/i.test(name);
 // Subjects that are clearly NOT new jobs to book (common misspellings included).
 const NON_JOB_RE = /\b(maintenance|maintanance|maintenence|mantenance|mantanace|matanance|mantanance)\b/i;
+
+/** A stable key for matching the same job week-to-week: a quote/reference number
+ * if present (e.g. QU1234), else the normalised title. */
+function matchKey(title: string): string {
+  const ref = title.match(/\bqu[-\s]?\d{3,}\b/i)?.[0] || title.match(/\b\d{4,}\b/)?.[0];
+  if (ref) return ref.toLowerCase().replace(/[\s-]/g, "");
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
 
 /**
  * Scans the mailbox for new emails from the configured trusted senders and
  * turns each new one into a job lead (status "lead") for the owner to approve.
  * Idempotent: messages already imported (by Gmail message id) are skipped.
  */
-export async function scanForLeads(
-  opts: { force?: boolean; sinceDays?: number } = {}
-): Promise<{ created: number; connected: boolean }> {
-  if (!(await isGoogleConnected())) return { created: 0, connected: false };
+export type ScanResult = {
+  created: number;
+  connected: boolean;
+  flagged: number; // jobs newly flagged as possibly moved/cancelled
+  plans: number; // existing jobs that just got their plans (PDFs)
+};
+
+/** Uploads attachments into a job's Drive folder + records them as documents,
+ * skipping any already saved. Returns how many new documents were saved. */
+async function attachToJob(
+  job: { id: string; reference: string; title: string },
+  attachments: { filename: string; data: Buffer; mimeType: string }[]
+): Promise<number> {
+  let n = 0;
+  for (const att of attachments) {
+    const exists = await prisma.document.findFirst({ where: { jobId: job.id, name: att.filename } });
+    if (exists) continue;
+    const up = await uploadToJobFolder(job, att.filename, att.data, att.mimeType);
+    if (up) {
+      await prisma.document.create({
+        data: { jobId: job.id, name: up.name, driveFileId: up.fileId, webViewLink: up.webViewLink, source: "gmail", mimeType: up.mimeType },
+      });
+      n++;
+    }
+  }
+  return n;
+}
+
+export async function scanForLeads(opts: { force?: boolean; sinceDays?: number } = {}): Promise<ScanResult> {
+  if (!(await isGoogleConnected())) return { created: 0, connected: false, flagged: 0, plans: 0 };
 
   const sources = await prisma.leadSource.findMany({ where: { enabled: true } });
   const emails = sources.map((s) => s.email.toLowerCase());
-  if (emails.length === 0) return { created: 0, connected: true };
+  if (emails.length === 0) return { created: 0, connected: true, flagged: 0, plans: 0 };
 
-  // Scheduled scans only look at the last week — job emails arrive weekly (the
-  // Friday run picks up that week's batch). A manual "Check inbox" can look back
-  // further so older or previously-dismissed emails can still be re-imported.
-  const sinceDays = opts.sinceDays ?? 7;
-  const messages = await findLeadMessages(emails, { sinceDays, maxMessages: 25 });
+  // Look back 14 days, then keep only the most recent email per company (Gmail
+  // returns newest-first, so the first time a sender's domain appears is its
+  // latest email). That latest email is treated as the company's current
+  // schedule and reconciled against the jobs already in the app.
+  const sinceDays = opts.sinceDays ?? 14;
+  const messages = await findLeadMessages(emails, { sinceDays, maxMessages: 60 });
+  const latest = new Map<string, (typeof messages)[number]>();
+  for (const m of messages) {
+    const domain = (m.fromEmail.split("@")[1] || m.fromEmail).toLowerCase();
+    if (!latest.has(domain)) latest.set(domain, m);
+  }
+
+  const durationFor = (j: { durationMins?: number; days?: number }): number => {
+    if (j.days && j.days > 0) return Math.round(j.days) * WORKDAY_MINS;
+    if (j.durationMins && j.durationMins > 0) return Math.round(j.durationMins);
+    return WORKDAY_MINS;
+  };
 
   let created = 0;
-  for (const m of messages) {
-    // Always skip emails that still have job(s) in the app (avoid duplicates).
-    const exists = await prisma.job.findFirst({ where: { gmailMessageId: m.messageId } });
-    if (exists) continue;
-    // The automatic scan also skips anything already scanned (even if it made no
-    // jobs) so non-job emails aren't re-run through AI every 15 min. A manual
-    // "Check inbox" (force) re-evaluates them — e.g. after dismissing a lead.
-    if (!opts.force) {
-      const seen = await prisma.processedEmail.findUnique({ where: { messageId: m.messageId } });
-      if (seen) continue;
-    }
+  let flagged = 0;
+  let plans = 0;
 
-    const markProcessed = (jobsCreated: number, reason?: string) =>
-      prisma.processedEmail
-        .upsert({
-          where: { messageId: m.messageId },
-          create: { messageId: m.messageId, jobsCreated, reason },
-          update: { jobsCreated, reason },
-        })
-        .catch(() => {});
-
-    // Maintenance / non-job emails are never bookable jobs — skip without AI.
-    if (NON_JOB_RE.test(m.subject || "")) {
-      await markProcessed(0, "maintenance");
-      continue;
-    }
+  for (const [domain, m] of latest) {
+    if (NON_JOB_RE.test(m.subject || "")) continue;
 
     const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
-    const pdfAttachments = m.attachments.filter(
-      (a) => a.mimeType === "application/pdf" || /\.pdf$/i.test(a.filename)
-    );
+    const pdfAttachments = m.attachments.filter((a) => PDF_RE(a.filename, a.mimeType));
 
-    // Ask AI to split the email (text + images) into its distinct jobs. PDFs are
-    // not read (cost) — only their filenames are sent so the AI can match each
-    // attachment to the right job.
     let extracted: Awaited<ReturnType<typeof extractJobsFromEmail>> = null;
     if (visionConfigured()) {
       extracted = await extractJobsFromEmail({
@@ -76,56 +97,70 @@ export async function scanForLeads(
         pdfNames: pdfAttachments.map((a) => a.filename),
       });
     }
-
-    // AI ran and judged there are no new bookable jobs (report request, etc.).
+    // AI ran and found no bookable jobs — don't reconcile (can't tell what's on
+    // the schedule), just record it.
     if (extracted !== null && extracted.length === 0) {
-      await markProcessed(0, "no_new_jobs");
+      await prisma.processedEmail
+        .upsert({ where: { messageId: m.messageId }, create: { messageId: m.messageId, jobsCreated: 0, reason: "no_new_jobs" }, update: { jobsCreated: 0, reason: "no_new_jobs" } })
+        .catch(() => {});
       continue;
     }
 
-    // Duration: prefer an explicit multi-day count, else AI minutes, else one work day.
-    const durationFor = (j: { durationMins?: number; days?: number }): number => {
-      if (j.days && j.days > 0) return Math.round(j.days) * WORKDAY_MINS;
-      if (j.durationMins && j.durationMins > 0) return Math.round(j.durationMins);
-      return WORKDAY_MINS;
-    };
+    type NewJob = { title: string; description: string; address?: string | null; start?: Date | null; durationMins: number; attachments: string[] };
+    const toCreate: NewJob[] =
+      extracted && extracted.length > 0
+        ? extracted.map((j) => ({
+            title: j.title?.trim() || "New job",
+            description: j.description?.trim() || "",
+            address: j.address?.trim() || null,
+            start: combineDateTime(j.date, j.time),
+            durationMins: durationFor(j),
+            attachments: Array.isArray(j.attachments) ? j.attachments : [],
+          }))
+        : [
+            {
+              title: m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry",
+              description: (m.body || m.snippet || "").slice(0, 1500),
+              address: null,
+              start: null,
+              durationMins: WORKDAY_MINS,
+              attachments: [],
+            },
+          ];
 
-    // Build the list of jobs to create — AI-split, or a single fallback lead.
-    type NewJob = {
-      title: string;
-      description: string;
-      address?: string | null;
-      start?: Date | null;
-      durationMins: number;
-      attachments: string[];
-    };
-    let toCreate: NewJob[];
-    if (extracted && extracted.length > 0) {
-      toCreate = extracted.map((j) => ({
-        title: j.title?.trim() || "New job",
-        description: j.description?.trim() || "",
-        address: j.address?.trim() || null,
-        start: combineDateTime(j.date, j.time),
-        durationMins: durationFor(j),
-        attachments: Array.isArray(j.attachments) ? j.attachments : [],
-      }));
-    } else {
-      toCreate = [
-        {
-          title: m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry",
-          description: (m.body || m.snippet || "").slice(0, 1500),
-          address: null,
-          start: null,
-          durationMins: WORKDAY_MINS,
-          attachments: [],
-        },
-      ];
-    }
+    // Open jobs already in the app from this company, to reconcile against.
+    const existing = await prisma.job.findMany({
+      where: { leadSource: { contains: domain }, status: { in: ["lead", "accepted", "scheduled", "in_progress"] } },
+      include: { documents: true },
+    });
+    const matchedIds = new Set<string>();
 
-    const createdJobs = [];
-    const jobByFilename = new Map<string, string>(); // attachment filename -> jobId
-    for (let i = 0; i < toCreate.length; i++) {
-      const nj = toCreate[i];
+    for (const nj of toCreate) {
+      const key = matchKey(nj.title);
+      const match = existing.find((j) => matchKey(j.title) === key);
+
+      if (match) {
+        matchedIds.add(match.id);
+        // It's back on this week's email — clear any stale "possibly moved" flag.
+        if (match.flag === "review") {
+          await prisma.job.update({ where: { id: match.id }, data: { flag: null } });
+          await logActivity(match.id, "lead", "Still on this week's email — review flag cleared");
+        }
+        // Plans arriving later: if the job has no PDF yet and this email carries one
+        // for it, attach it.
+        const hasPdf = match.documents.some((d) => PDF_RE(d.name, d.mimeType));
+        if (!hasPdf) {
+          const forThis = pdfAttachments.filter((a) => nj.attachments.includes(a.filename));
+          const got = await attachToJob(match, forThis.length ? forThis : toCreate.length === 1 ? pdfAttachments : []);
+          if (got > 0) {
+            plans++;
+            await logActivity(match.id, "drive", `Plans received — ${got} PDF(s) attached from email`);
+          }
+        }
+        continue;
+      }
+
+      // New job for this company → create it as a "to confirm" lead.
       const job = await prisma.job.create({
         data: {
           reference: await nextReference(),
@@ -143,48 +178,35 @@ export async function scanForLeads(
           durationMins: nj.durationMins,
         },
       });
-      createdJobs.push(job);
       created++;
-      for (const fn of nj.attachments) jobByFilename.set(fn, job.id);
+      const own = m.attachments.filter((a) => nj.attachments.includes(a.filename));
+      await attachToJob(job, own.length ? own : toCreate.length === 1 ? m.attachments : []);
+      await logActivity(job.id, "lead", `Imported from email — ${m.fromName} <${m.fromEmail}>`, { messageId: m.messageId });
     }
 
-    // File each attachment into its matching job's Drive folder (AI-matched by
-    // filename), falling back to the first job.
-    const primary = createdJobs[0];
-    if (primary) {
-      for (const att of m.attachments) {
-        const targetId = jobByFilename.get(att.filename) || primary.id;
-        const target = createdJobs.find((j) => j.id === targetId) || primary;
-        const uploaded = await uploadToJobFolder(
-          { id: target.id, reference: target.reference, title: target.title },
-          att.filename,
-          att.data,
-          att.mimeType
-        );
-        if (uploaded) {
-          await prisma.document.create({
-            data: {
-              jobId: target.id,
-              name: uploaded.name,
-              driveFileId: uploaded.fileId,
-              webViewLink: uploaded.webViewLink,
-              source: "gmail",
-              mimeType: uploaded.mimeType,
-            },
-          });
-        }
-      }
-      const note =
-        createdJobs.length > 1
-          ? `AI split this email into ${createdJobs.length} jobs`
-          : `Imported from email — ${m.fromName} <${m.fromEmail}>`;
-      await logActivity(primary.id, "lead", note, { messageId: m.messageId, jobs: createdJobs.length });
+    // Moved/cancelled detection: a confirmed/scheduled job from this company that
+    // falls in the next ~2 weeks but isn't in their latest email is probably
+    // moved or cancelled — flag it for review (never auto-delete).
+    const now = Date.now();
+    const horizon = now + 14 * 86_400_000;
+    for (const j of existing) {
+      if (matchedIds.has(j.id)) continue;
+      if (!["accepted", "scheduled", "in_progress"].includes(j.status)) continue;
+      if (!j.scheduledStart) continue;
+      const t = new Date(j.scheduledStart).getTime();
+      if (t < now - 86_400_000 || t > horizon) continue;
+      if (j.flag === "review") continue;
+      await prisma.job.update({ where: { id: j.id }, data: { flag: "review" } });
+      await logActivity(j.id, "lead", "Not in this week's email — may have been moved or cancelled");
+      flagged++;
     }
 
-    await markProcessed(createdJobs.length);
+    await prisma.processedEmail
+      .upsert({ where: { messageId: m.messageId }, create: { messageId: m.messageId, jobsCreated: created, reason: "reconciled" }, update: { jobsCreated: created, reason: "reconciled" } })
+      .catch(() => {});
   }
 
-  return { created, connected: true };
+  return { created, connected: true, flagged, plans };
 }
 
 /** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null.

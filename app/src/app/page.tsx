@@ -94,6 +94,18 @@ export default function DashboardPage() {
     }).length;
   }, [jobs]);
 
+  // Jobs flagged by intake reconciliation as possibly moved/cancelled.
+  const review = useMemo(() => jobs.filter((j) => j.flag === "review"), [jobs]);
+
+  async function clearFlag(job: JobDTO) {
+    await api(`/api/jobs/${job.id}`, { method: "PATCH", body: JSON.stringify({ flag: null }) });
+    await load();
+  }
+  async function cancelJob(job: JobDTO) {
+    await api(`/api/jobs/${job.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
+    await load();
+  }
+
   function flash(m: string) {
     setToast(m);
     setTimeout(() => setToast(null), 3500);
@@ -104,9 +116,15 @@ export default function DashboardPage() {
     try {
       // force=1: re-check emails even if a previous scan already saw them (so a
       // dismissed lead can be re-imported, and fixes apply to old emails).
-      const res = await api<{ created: number; connected: boolean }>("/api/leads/scan?force=1", { method: "POST" });
+      const res = await api<{ created: number; connected: boolean; flagged?: number; plans?: number }>("/api/leads/scan?force=1", { method: "POST" });
       if (!res.connected) flash("Connect Google in Settings to check your inbox.");
-      else flash(res.created > 0 ? `Found ${res.created} new job${res.created > 1 ? "s" : ""} to confirm` : "No new jobs in your inbox");
+      else {
+        const parts: string[] = [];
+        if (res.created) parts.push(`${res.created} new to confirm`);
+        if (res.plans) parts.push(`${res.plans} plans arrived`);
+        if (res.flagged) parts.push(`${res.flagged} to review`);
+        flash(parts.length ? `Inbox checked — ${parts.join(" · ")}` : "No changes in your inbox");
+      }
       await load();
     } catch {
       flash("Couldn't check the inbox just now.");
@@ -152,6 +170,33 @@ export default function DashboardPage() {
         </div>
         <span className="text-lg">→</span>
       </Link>
+
+      {/* Needs review — possibly moved/cancelled */}
+      {review.length > 0 && (
+        <section className="mb-5">
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-700">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
+              {review.length}
+            </span>
+            Needs review
+          </h2>
+          <div className="space-y-2">
+            {review.map((job) => (
+              <div key={job.id} className="card border-l-4 border-amber-400 p-3.5">
+                <Link href={`/jobs/${job.id}`} className="block">
+                  <h3 className="truncate font-semibold text-stone-900">{job.title}</h3>
+                  <p className="mt-0.5 text-sm text-amber-700">⚠️ Not in this week’s email — may be moved or cancelled</p>
+                  <p className="mt-0.5 truncate text-xs text-stone-500">{job.clientName || job.leadSource}</p>
+                </Link>
+                <div className="mt-3 flex gap-2">
+                  <button className="btn-secondary flex-1 py-2" onClick={() => clearFlag(job)}>Keep — it’s fine</button>
+                  <button className="rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700" onClick={() => cancelJob(job)}>Cancel job</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Jobs to confirm */}
       {leads.length > 0 && (

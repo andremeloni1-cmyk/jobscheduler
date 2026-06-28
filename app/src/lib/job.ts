@@ -20,6 +20,7 @@ export interface JobDTO {
   driveFolderId?: string | null;
   leadSource?: string | null;
   gmailMessageId?: string | null;
+  flag?: string | null;
   notes?: string | null;
   createdAt?: string;
   documents?: DocumentDTO[];

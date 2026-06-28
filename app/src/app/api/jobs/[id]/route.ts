@@ -34,6 +34,7 @@ export async function PATCH(req: Request, { params }: Params) {
   }
   if ("quoteAmount" in body) data.quoteAmount = body.quoteAmount != null ? Number(body.quoteAmount) : null;
   if ("durationMins" in body) data.durationMins = Number(body.durationMins) || existing.durationMins;
+  if ("flag" in body) data.flag = body.flag || null; // clear/set the review flag
 
   const timeChanged =
     ("scheduledStart" in body || "scheduledEnd" in body);
