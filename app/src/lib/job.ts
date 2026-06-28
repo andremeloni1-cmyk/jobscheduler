@@ -18,6 +18,8 @@ export interface JobDTO {
   clientPhone?: string | null;
   googleEventId?: string | null;
   driveFolderId?: string | null;
+  leadSource?: string | null;
+  gmailMessageId?: string | null;
   notes?: string | null;
   documents?: DocumentDTO[];
   reports?: ReportDTO[];
@@ -36,10 +38,11 @@ export interface DocumentDTO {
 export interface ReportDTO {
   id: string;
   status: string;
-  data: string;
+  data?: string;
   webViewLink?: string | null;
   sentAt?: string | null;
-  createdAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ActivityDTO {

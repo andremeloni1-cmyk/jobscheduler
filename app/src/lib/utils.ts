@@ -1,17 +1,16 @@
 import { prisma } from "@/lib/db";
 
-/** Generates the next human-friendly job reference, e.g. JOB-1042. */
+/** Generates the next human-friendly job reference, e.g. JOB-1042.
+ * Uses the highest existing number (not the most recent row) so it stays
+ * collision-free even when references are created out of timestamp order. */
 export async function nextReference(): Promise<string> {
-  const last = await prisma.job.findFirst({
-    orderBy: { createdAt: "desc" },
-    select: { reference: true },
-  });
-  let n = 1000;
-  if (last?.reference) {
-    const m = last.reference.match(/(\d+)$/);
-    if (m) n = parseInt(m[1], 10);
+  const all = await prisma.job.findMany({ select: { reference: true } });
+  let max = 1000;
+  for (const j of all) {
+    const m = j.reference?.match(/(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
   }
-  return `JOB-${n + 1}`;
+  return `JOB-${max + 1}`;
 }
 
 export function parseDate(v: unknown): Date | null {

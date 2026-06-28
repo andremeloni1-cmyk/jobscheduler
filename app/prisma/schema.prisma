@@ -55,7 +55,7 @@ model Job {
 
   // Money
   quoteAmount  Float?
-  currency     String   @default("GBP")
+  currency     String   @default("AUD")
 
   // Site
   address      String?
@@ -66,6 +66,11 @@ model Job {
   clientName   String?
   clientEmail  String?
   clientPhone  String?
+
+  // Lead provenance — set when a job was imported from an incoming email.
+  leadSource     String?  // sender email address it came from
+  gmailMessageId String?  @unique // dedupe imported emails
+  gmailThreadId  String?
 
   // Google links
   googleEventId String?
@@ -116,6 +121,15 @@ model Activity {
   type      String   // status_change | calendar | drive | email | report | note
   message   String
   meta      String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+// Trusted senders whose emails are turned into job leads to approve.
+model LeadSource {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 

@@ -128,6 +128,131 @@ export async function findJobPdfAttachments(query: {
   return results;
 }
 
+/** Re-downloads the image attachments from a single Gmail message by id. */
+export async function getMessageImages(messageId: string): Promise<FoundAttachment[]> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return [];
+  const gmail = google.gmail({ version: "v1", auth });
+  const full = await gmail.users.messages.get({ userId: "me", id: messageId, format: "full" });
+  const out: FoundAttachment[] = [];
+  for (const part of flattenParts(full.data.payload)) {
+    const name = (part.filename || "").toLowerCase();
+    if (part.filename && /\.(png|jpe?g|gif|webp)$/.test(name) && part.body?.attachmentId) {
+      const att = await gmail.users.messages.attachments.get({
+        userId: "me",
+        messageId,
+        id: part.body.attachmentId,
+      });
+      out.push({
+        messageId,
+        attachmentId: part.body.attachmentId,
+        filename: part.filename,
+        mimeType: part.mimeType || "image/png",
+        data: Buffer.from(att.data.data || "", "base64"),
+      });
+    }
+  }
+  return out;
+}
+
+export type LeadMessage = {
+  messageId: string;
+  threadId: string;
+  fromName: string;
+  fromEmail: string;
+  subject: string;
+  snippet: string;
+  body: string;
+  attachments: FoundAttachment[];
+};
+
+function header(payload: any, name: string): string {
+  const h = (payload?.headers || []).find(
+    (x: any) => x.name?.toLowerCase() === name.toLowerCase()
+  );
+  return h?.value || "";
+}
+
+function parseFrom(value: string): { name: string; email: string } {
+  // "Emily <emily@x.com>" or "emily@x.com"
+  const m = value.match(/^(.*?)<([^>]+)>\s*$/);
+  if (m) return { name: m[1].replace(/"/g, "").trim(), email: m[2].trim().toLowerCase() };
+  return { name: value.trim(), email: value.trim().toLowerCase() };
+}
+
+function decodeBody(payload: any): string {
+  const parts = flattenParts(payload);
+  // Prefer text/plain; fall back to stripped HTML.
+  const plain = parts.find((p) => p.mimeType === "text/plain" && p.body?.data);
+  const html = parts.find((p) => p.mimeType === "text/html" && p.body?.data);
+  const chosen = plain || html;
+  if (!chosen?.body?.data) return "";
+  const text = Buffer.from(chosen.body.data, "base64").toString("utf-8");
+  return chosen === html ? text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : text.trim();
+}
+
+/**
+ * Searches Gmail for recent messages from the given sender addresses and
+ * returns them parsed (with any PDF attachments downloaded). [] in demo mode.
+ */
+export async function findLeadMessages(
+  senders: string[],
+  opts: { sinceDays?: number; maxMessages?: number } = {}
+): Promise<LeadMessage[]> {
+  const auth = await getAuthorizedClient();
+  if (!auth || senders.length === 0) return [];
+
+  const gmail = google.gmail({ version: "v1", auth });
+  const fromQuery = senders.map((s) => `from:${s}`).join(" OR ");
+  const q = `(${fromQuery}) newer_than:${opts.sinceDays || 30}d`;
+
+  const list = await gmail.users.messages.list({
+    userId: "me",
+    q,
+    maxResults: opts.maxMessages || 25,
+  });
+
+  const out: LeadMessage[] = [];
+  for (const msg of list.data.messages || []) {
+    const full = await gmail.users.messages.get({ userId: "me", id: msg.id!, format: "full" });
+    const payload = full.data.payload;
+    const from = parseFrom(header(payload, "From"));
+    const subject = header(payload, "Subject") || "(no subject)";
+
+    const attachments: FoundAttachment[] = [];
+    for (const part of flattenParts(payload)) {
+      const name = (part.filename || "").toLowerCase();
+      const isJobFile = /\.(pdf|png|jpe?g|gif|webp)$/.test(name);
+      if (part.filename && isJobFile && part.body?.attachmentId) {
+        const att = await gmail.users.messages.attachments.get({
+          userId: "me",
+          messageId: msg.id!,
+          id: part.body.attachmentId,
+        });
+        attachments.push({
+          messageId: msg.id!,
+          attachmentId: part.body.attachmentId,
+          filename: part.filename,
+          mimeType: part.mimeType || "application/pdf",
+          data: Buffer.from(att.data.data || "", "base64"),
+        });
+      }
+    }
+
+    out.push({
+      messageId: msg.id!,
+      threadId: full.data.threadId || msg.id!,
+      fromName: from.name || from.email,
+      fromEmail: from.email,
+      subject,
+      snippet: full.data.snippet || "",
+      body: decodeBody(payload),
+      attachments,
+    });
+  }
+  return out;
+}
+
 function flattenParts(payload: any): any[] {
   if (!payload) return [];
   const out: any[] = [];

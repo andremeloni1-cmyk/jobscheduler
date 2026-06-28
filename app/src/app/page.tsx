@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { JobCard } from "@/components/JobCard";
 import { Modal } from "@/components/Modal";
 import { JobForm } from "@/components/JobForm";
+import { LeadInbox } from "@/components/LeadInbox";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
 
@@ -15,6 +16,8 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<string>("active");
   const [query, setQuery] = useState("");
   const [showNew, setShowNew] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -61,6 +64,31 @@ export default function DashboardPage() {
     return { active, scheduled, value };
   }, [jobs]);
 
+  // Imported email leads awaiting approval.
+  const leads = useMemo(
+    () => jobs.filter((j) => j.leadSource && j.status === "lead"),
+    [jobs]
+  );
+
+  function flash(m: string) {
+    setToast(m);
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function scanInbox() {
+    setScanning(true);
+    try {
+      const res = await api<{ created: number; connected: boolean }>("/api/leads/scan", { method: "POST" });
+      if (!res.connected) flash("Connect Google in Settings to check your inbox.");
+      else flash(res.created > 0 ? `Found ${res.created} new job${res.created > 1 ? "s" : ""} to approve` : "No new jobs in your inbox");
+      await load();
+    } catch {
+      flash("Couldn't check the inbox just now.");
+    } finally {
+      setScanning(false);
+    }
+  }
+
   async function createJob(payload: Record<string, unknown>) {
     await api("/api/jobs", { method: "POST", body: JSON.stringify(payload) });
     setShowNew(false);
@@ -79,15 +107,40 @@ export default function DashboardPage() {
         </div>
       </header>
 
+      {toast && (
+        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {/* Incoming jobs to approve */}
+      {leads.length > 0 && (
+        <LeadInbox leads={leads} onChanged={load} onScan={scanInbox} scanning={scanning} />
+      )}
+
       {/* Summary */}
       <div className="mb-5 grid grid-cols-3 gap-3">
         <Stat label="Active" value={String(counts.active)} />
         <Stat label="Scheduled" value={String(counts.scheduled)} />
         <Stat
           label="Pipeline"
-          value={new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(counts.value)}
+          value={new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(counts.value)}
         />
       </div>
+
+      {leads.length === 0 && (
+        <button
+          onClick={scanInbox}
+          disabled={scanning}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-stone-600 ring-1 ring-stone-200 transition active:scale-[0.99] disabled:opacity-50"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 7 9 6 9-6" />
+          </svg>
+          {scanning ? "Checking inbox…" : "Check inbox for new jobs"}
+        </button>
+      )}
 
       {/* Search */}
       <div className="relative mb-3">

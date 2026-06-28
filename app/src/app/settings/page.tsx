@@ -17,10 +17,15 @@ const TEMPLATE_LABELS: Record<string, string> = {
   report: "Maintenance report",
 };
 
+type LeadSource = { id: string; name: string; email: string; enabled: boolean };
+
 export default function SettingsPage() {
   const [data, setData] = useState<SettingsData | null>(null);
   const [name, setName] = useState("");
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [sources, setSources] = useState<LeadSource[]>([]);
+  const [newSourceName, setNewSourceName] = useState("");
+  const [newSourceEmail, setNewSourceEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -29,10 +34,37 @@ export default function SettingsPage() {
     setData(d);
     setName(d.account?.name || "");
     setTemplates(d.templates);
+    try {
+      const ls = await api<{ sources: LeadSource[] }>("/api/lead-sources");
+      setSources(ls.sources);
+    } catch {
+      /* ignore */
+    }
   }
   useEffect(() => {
     load();
   }, []);
+
+  async function toggleSource(s: LeadSource) {
+    setSources((prev) => prev.map((x) => (x.id === s.id ? { ...x, enabled: !x.enabled } : x)));
+    await api(`/api/lead-sources/${s.id}`, { method: "PATCH", body: JSON.stringify({ enabled: !s.enabled }) });
+  }
+  async function deleteSource(s: LeadSource) {
+    if (!confirm(`Stop watching ${s.email}?`)) return;
+    setSources((prev) => prev.filter((x) => x.id !== s.id));
+    await api(`/api/lead-sources/${s.id}`, { method: "DELETE" });
+  }
+  async function addSource() {
+    const email = newSourceEmail.trim().toLowerCase();
+    if (!email.includes("@")) return;
+    const { source } = await api<{ source: LeadSource }>("/api/lead-sources", {
+      method: "POST",
+      body: JSON.stringify({ email, name: newSourceName.trim() || email }),
+    });
+    setSources((prev) => [...prev.filter((x) => x.id !== source.id), source]);
+    setNewSourceName("");
+    setNewSourceEmail("");
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -109,6 +141,40 @@ export default function SettingsPage() {
             Google.
           </p>
         )}
+      </div>
+
+      {/* Incoming job sources */}
+      <div className="card mb-4 p-4">
+        <h2 className="mb-1 font-semibold text-stone-900">Incoming jobs</h2>
+        <p className="mb-3 text-sm text-stone-500">
+          Emails from these senders become job leads for you to approve. The app checks automatically, or tap
+          “Check inbox for new jobs” on the Jobs screen.
+        </p>
+        <div className="space-y-2">
+          {sources.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 rounded-xl bg-stone-50 px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-stone-800">{s.name}</p>
+                <p className="truncate text-xs text-stone-500">{s.email}</p>
+              </div>
+              <label className="flex items-center gap-1.5 text-xs text-stone-500">
+                <input type="checkbox" checked={s.enabled} onChange={() => toggleSource(s)} className="h-4 w-4 accent-brand-600" />
+                On
+              </label>
+              <button onClick={() => deleteSource(s)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-200" aria-label="Remove">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          ))}
+          {sources.length === 0 && <p className="text-sm text-stone-400">No senders yet — add one below.</p>}
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <input className="input" placeholder="Company name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} />
+          <input className="input" placeholder="email@company.com" value={newSourceEmail} onChange={(e) => setNewSourceEmail(e.target.value)} />
+          <button className="btn-secondary" onClick={addSource}>Add</button>
+        </div>
       </div>
 
       {/* Account */}

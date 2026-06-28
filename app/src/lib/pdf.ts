@@ -1,5 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
+export type RoomEntry = { name: string; work: string };
+
 export type ReportData = {
   engineer?: string;
   visitDate?: string;
@@ -10,6 +12,7 @@ export type ReportData = {
   followUp?: string;
   condition?: string; // Good | Fair | Needs attention
   nextServiceDate?: string;
+  rooms?: RoomEntry[]; // per-room breakdown of the work
 };
 
 type Meta = {
@@ -27,13 +30,21 @@ const MUTED = rgb(0.4, 0.38, 0.36);
 /** Generates a clean A4 maintenance report PDF and returns the bytes. */
 export async function generateReportPdf(meta: Meta, data: ReportData): Promise<Buffer> {
   const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595.28, 841.89]); // A4
+  let page = pdf.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   const margin = 50;
   let y = height - margin;
+
+  // Start a new page if there isn't room for `needed` vertical points.
+  const ensureSpace = (needed: number) => {
+    if (y - needed < margin) {
+      page = pdf.addPage([595.28, 841.89]);
+      y = height - margin;
+    }
+  };
 
   const text = (
     s: string,
@@ -65,6 +76,7 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
     }
     if (line) lines.push(line);
     for (const l of lines) {
+      ensureSpace(lh);
       page.drawText(l, { x: margin, y, size, font, color: INK });
       y -= lh;
     }
@@ -114,6 +126,7 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   y -= 24;
 
   const section = (heading: string, body?: string) => {
+    ensureSpace(34);
     page.drawText(heading, { x: margin, y, size: 12, font: bold, color: BRAND });
     y -= 18;
     paragraph(body || "—");
@@ -121,11 +134,29 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   };
 
   section("Work carried out", data.workCarried);
+
+  // Per-room breakdown
+  if (data.rooms && data.rooms.length > 0) {
+    ensureSpace(34);
+    page.drawText("Work by room", { x: margin, y, size: 12, font: bold, color: BRAND });
+    y -= 18;
+    for (const room of data.rooms) {
+      if (!room.name && !room.work) continue;
+      ensureSpace(20);
+      page.drawText(room.name || "Room", { x: margin, y, size: 11, font: bold, color: INK });
+      y -= 15;
+      paragraph(room.work || "—");
+      y -= 8;
+    }
+    y -= 4;
+  }
+
   section("Findings", data.findings);
   section("Materials used", data.materialsUsed);
   section("Recommendations", data.recommendations);
 
   // Condition + next service summary box
+  ensureSpace(72);
   y -= 6;
   page.drawRectangle({
     x: margin,

@@ -1,0 +1,23 @@
+import { prisma } from "@/lib/db";
+import { json } from "@/lib/utils";
+import { isAuthenticated } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
+
+type Params = { params: { id: string } };
+
+export async function PATCH(req: Request, { params }: Params) {
+  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  const body = await req.json().catch(() => ({}));
+  const data: Record<string, unknown> = {};
+  if ("enabled" in body) data.enabled = Boolean(body.enabled);
+  if ("name" in body) data.name = body.name;
+  const source = await prisma.leadSource.update({ where: { id: params.id }, data });
+  return json({ source });
+}
+
+export async function DELETE(_req: Request, { params }: Params) {
+  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  await prisma.leadSource.delete({ where: { id: params.id } });
+  return json({ ok: true });
+}

@@ -83,6 +83,47 @@ export async function upsertJobEvent(
   return res.data.id || null;
 }
 
+export type ExternalEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+};
+
+/**
+ * Lists the owner's existing Google Calendar events in a window, so the app's
+ * calendar can show prior commitments when scheduling. Excludes events this app
+ * created for jobs (those are already rendered from the DB). Returns null in
+ * demo mode (Google not connected).
+ */
+export async function listEvents(timeMin: Date, timeMax: Date): Promise<ExternalEvent[] | null> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return null;
+
+  const calendar = google.calendar({ version: "v3", auth });
+  const res = await calendar.events.list({
+    calendarId: await calendarId(),
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+    maxResults: 250,
+  });
+
+  return (res.data.items || [])
+    .filter((e) => e.status !== "cancelled")
+    .filter((e) => !e.extendedProperties?.private?.joineryflowJobId)
+    .map((e) => ({
+      id: e.id || "",
+      title: e.summary || "(busy)",
+      start: e.start?.dateTime || e.start?.date || "",
+      end: e.end?.dateTime || e.end?.date || "",
+      allDay: Boolean(e.start?.date),
+    }))
+    .filter((e) => e.start);
+}
+
 export async function deleteJobEvent(googleEventId?: string | null): Promise<boolean> {
   if (!googleEventId) return false;
   const auth = await getAuthorizedClient();
