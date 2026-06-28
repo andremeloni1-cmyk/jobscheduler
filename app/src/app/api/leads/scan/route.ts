@@ -19,7 +19,9 @@ export async function POST(req: Request) {
   // the cron never forces, so non-job emails aren't re-run through AI repeatedly.
   const force = isAuthenticated() && new URL(req.url).searchParams.get("force") === "1";
   try {
-    const result = await scanForLeads({ force });
+    // Manual checks look back a month so older/dismissed emails can return;
+    // the scheduled Friday run only scans the past week's batch.
+    const result = await scanForLeads({ force, sinceDays: force ? 30 : 7 });
     return json({ ok: true, ...result });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : "scan failed" }, 500);

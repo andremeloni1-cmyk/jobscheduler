@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { StatusPill } from "@/components/StatusPill";
 import { RescheduleModal } from "@/components/RescheduleModal";
-import { fmtRange } from "@/lib/format";
-import { type JobStatus } from "@/lib/types";
+import { Modal } from "@/components/Modal";
+import { fmtRange, fmtDay } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, jobEnd, WORKDAY_MINS } from "@/lib/schedule";
+import { companyPalette, companyLabel, companyKeyOf } from "@/lib/colors";
 
 // A job rendered on a particular day, carrying that day's working segment.
 type DayJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
@@ -48,6 +49,8 @@ export default function CalendarPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [reschedule, setReschedule] = useState<JobDTO | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [summaryJob, setSummaryJob] = useState<DayJob | null>(null);
+  const [summaryEvent, setSummaryEvent] = useState<ExternalEvent | null>(null);
 
   async function load() {
     setLoading(true);
@@ -163,6 +166,16 @@ export default function CalendarPage() {
     [weekStart]
   );
 
+  // Distinct companies among scheduled jobs, for the colour-coding legend.
+  const companies = useMemo(() => {
+    const map = new Map<string, { label: string; swatch: string }>();
+    for (const j of jobs) {
+      const key = companyKeyOf(j);
+      if (!map.has(key)) map.set(key, { label: companyLabel(j), swatch: companyPalette(j).swatch });
+    }
+    return [...map.values()].sort((a, b) => a.label.localeCompare(b.label));
+  }, [jobs]);
+
   function shiftMonth(delta: number) {
     setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
   }
@@ -188,6 +201,18 @@ export default function CalendarPage() {
       </header>
 
       {hint && <div className="mb-3 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{hint}</div>}
+
+      {/* Company colour key */}
+      {companies.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1.5">
+          {companies.map((c) => (
+            <span key={c.label} className="inline-flex items-center gap-1.5 text-xs text-stone-500">
+              <span className={`h-2.5 w-2.5 rounded-full ${c.swatch}`} />
+              {c.label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Google Calendar status */}
       {!calStatus.connected ? (
@@ -293,8 +318,8 @@ export default function CalendarPage() {
                     {dayJobs.slice(0, 3).map((j) => (
                       <span
                         key={j.id}
-                        className={`h-1.5 w-1.5 rounded-full ${dotColor(j.status)}`}
-                        title={j.title}
+                        className={`h-1.5 w-1.5 rounded-full ${companyPalette(j).dot}`}
+                        title={`${j.title} — ${companyLabel(j)}`}
                       />
                     ))}
                     {dayJobs.length > 3 && <span className="text-[9px] leading-none text-stone-400">+{dayJobs.length - 3}</span>}
@@ -317,6 +342,8 @@ export default function CalendarPage() {
               busy={externalForDay(selectedDay)}
               busyLabel={externalLabel}
               onReschedule={setReschedule}
+              onOpen={setSummaryJob}
+              onOpenEvent={setSummaryEvent}
               draggable
               setDragId={setDragId}
             />
@@ -369,18 +396,18 @@ export default function CalendarPage() {
                           draggable
                           onDragStart={() => setDragId(job.id)}
                           onDragEnd={() => setDragId(null)}
-                          className="flex items-center gap-3 px-4 py-3 active:bg-stone-50"
+                          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-stone-50 ${companyPalette(job).bar}`}
                         >
                           <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job._segStart, job._segEnd)}</div>
-                          <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1">
+                          <button onClick={() => setSummaryJob(job)} className="min-w-0 flex-1 text-left">
                             <p className="truncate text-sm font-semibold text-stone-900">
                               {job.title}
                               {job._dayCount > 1 && (
                                 <span className="ml-1.5 text-xs font-normal text-stone-400">· Day {job._dayIndex + 1}/{job._dayCount}</span>
                               )}
                             </p>
-                            <p className="truncate text-xs text-stone-500">{job.clientName || "—"}</p>
-                          </Link>
+                            <p className="truncate text-xs text-stone-500">{companyLabel(job)}</p>
+                          </button>
                           <StatusPill status={job.status} />
                           <button onClick={() => setReschedule(job)} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100" aria-label="Reschedule">
                             <ClockIcon />
@@ -390,7 +417,7 @@ export default function CalendarPage() {
                       {dayBusy.map((e) => (
                         <li key={e.id} className="flex items-center gap-3 border-l-4 border-sky-300 px-4 py-2.5">
                           <div className="w-14 shrink-0 text-xs font-medium text-sky-700">{externalLabel(e)}</div>
-                          <span className="min-w-0 flex-1 truncate text-sm text-sky-800">{e.title}</span>
+                          <button onClick={() => setSummaryEvent(e)} className="min-w-0 flex-1 truncate text-left text-sm text-sky-800">{e.title}</button>
                           <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600">Busy</span>
                         </li>
                       ))}
@@ -406,6 +433,74 @@ export default function CalendarPage() {
       {loading && <p className="py-6 text-center text-sm text-stone-400">Loading…</p>}
 
       <RescheduleModal job={reschedule} open={!!reschedule} onClose={() => setReschedule(null)} onDone={load} />
+
+      {/* Tap-to-view summary for a scheduled job (works even once it's on Google). */}
+      <Modal open={!!summaryJob} onClose={() => setSummaryJob(null)} title="Job summary">
+        {summaryJob && (
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-lg font-bold text-stone-900">{summaryJob.title}</h3>
+              <StatusPill status={summaryJob.status} />
+            </div>
+            <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${companyPalette(summaryJob).chip}`}>
+              <span className={`h-2 w-2 rounded-full ${companyPalette(summaryJob).swatch}`} />
+              {companyLabel(summaryJob)}
+            </span>
+            <dl className="space-y-1.5 text-sm">
+              <Row label="When">
+                {fmtDay(summaryJob._segStart)} · {fmtRange(summaryJob._segStart, summaryJob._segEnd)}
+                {summaryJob._dayCount > 1 && (
+                  <span className="text-stone-400"> · day {summaryJob._dayIndex + 1} of {summaryJob._dayCount}</span>
+                )}
+              </Row>
+              {summaryJob.clientName && <Row label="Client">{summaryJob.clientName}</Row>}
+              {summaryJob.address && <Row label="Address">{summaryJob.address}</Row>}
+              {summaryJob.reference && <Row label="Ref">{summaryJob.reference}</Row>}
+            </dl>
+            {summaryJob.description && (
+              <p className="whitespace-pre-wrap rounded-xl bg-stone-50 p-3 text-sm text-stone-600">{summaryJob.description}</p>
+            )}
+            {summaryJob.documents && summaryJob.documents.length > 0 && (
+              <div className="space-y-1">
+                {summaryJob.documents
+                  .filter((d) => d.webViewLink)
+                  .map((d) => (
+                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="block truncate text-sm font-medium text-brand-600 underline">
+                      📎 {d.name}
+                    </a>
+                  ))}
+              </div>
+            )}
+            <Link href={`/jobs/${summaryJob.id}`} className="btn-primary w-full">Open full job</Link>
+          </div>
+        )}
+      </Modal>
+
+      {/* Summary for one of the owner's existing Google Calendar events. */}
+      <Modal open={!!summaryEvent} onClose={() => setSummaryEvent(null)} title="Calendar event">
+        {summaryEvent && (
+          <div className="space-y-3">
+            <h3 className="text-lg font-bold text-stone-900">{summaryEvent.title}</h3>
+            <dl className="space-y-1.5 text-sm">
+              <Row label="When">
+                {fmtDay(summaryEvent.start)}
+                {!summaryEvent.allDay && <> · {fmtRange(summaryEvent.start, summaryEvent.end)}</>}
+                {summaryEvent.allDay && <span className="text-stone-400"> · all day</span>}
+              </Row>
+            </dl>
+            <p className="rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-700">From your Google Calendar</p>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-16 shrink-0 text-stone-400">{label}</dt>
+      <dd className="min-w-0 flex-1 text-stone-700">{children}</dd>
     </div>
   );
 }
@@ -415,6 +510,8 @@ function DayList({
   busy = [],
   busyLabel,
   onReschedule,
+  onOpen,
+  onOpenEvent,
   draggable,
   setDragId,
 }: {
@@ -422,6 +519,8 @@ function DayList({
   busy?: ExternalEvent[];
   busyLabel?: (e: ExternalEvent) => string;
   onReschedule: (j: JobDTO) => void;
+  onOpen: (j: DayJob) => void;
+  onOpenEvent: (e: ExternalEvent) => void;
   draggable?: boolean;
   setDragId?: (id: string | null) => void;
 }) {
@@ -436,18 +535,18 @@ function DayList({
           draggable={draggable}
           onDragStart={() => setDragId?.(job.id)}
           onDragEnd={() => setDragId?.(null)}
-          className="flex items-center gap-3 px-4 py-3 active:bg-stone-50"
+          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-stone-50 ${companyPalette(job).bar}`}
         >
           <div className="w-14 shrink-0 text-xs font-semibold text-stone-500">{fmtRange(job._segStart, job._segEnd)}</div>
-          <Link href={`/jobs/${job.id}`} className="min-w-0 flex-1">
+          <button onClick={() => onOpen(job)} className="min-w-0 flex-1 text-left">
             <p className="truncate text-sm font-semibold text-stone-900">
               {job.title}
               {job._dayCount > 1 && (
                 <span className="ml-1.5 text-xs font-normal text-stone-400">· Day {job._dayIndex + 1}/{job._dayCount}</span>
               )}
             </p>
-            <p className="truncate text-xs text-stone-500">{job.clientName || "—"}</p>
-          </Link>
+            <p className="truncate text-xs text-stone-500">{companyLabel(job)}</p>
+          </button>
           <StatusPill status={job.status} />
           <button onClick={() => onReschedule(job)} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100" aria-label="Reschedule">
             <ClockIcon />
@@ -457,22 +556,12 @@ function DayList({
       {busy.map((e) => (
         <div key={e.id} className="flex items-center gap-3 border-l-4 border-sky-300 px-4 py-2.5">
           <div className="w-14 shrink-0 text-xs font-medium text-sky-700">{busyLabel ? busyLabel(e) : ""}</div>
-          <span className="min-w-0 flex-1 truncate text-sm text-sky-800">{e.title}</span>
+          <button onClick={() => onOpenEvent(e)} className="min-w-0 flex-1 truncate text-left text-sm text-sky-800">{e.title}</button>
           <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-600">Busy</span>
         </div>
       ))}
     </div>
   );
-}
-
-function dotColor(status: string): string {
-  const map: Record<string, string> = {
-    accepted: "bg-emerald-500",
-    scheduled: "bg-brand-500",
-    in_progress: "bg-amber-500",
-    completed: "bg-green-600",
-  };
-  return map[status as JobStatus] || "bg-stone-400";
 }
 
 function ClockIcon() {

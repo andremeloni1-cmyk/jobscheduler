@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { getAuthorizedClient } from "./oauth";
 import { prisma } from "@/lib/db";
 import { workdaySegments, businessTimeZone } from "@/lib/schedule";
+import { googleColorId } from "@/lib/colors";
 
 type JobLike = {
   id: string;
@@ -11,6 +12,7 @@ type JobLike = {
   address?: string | null;
   clientName?: string | null;
   clientEmail?: string | null;
+  leadSource?: string | null;
   scheduledStart?: Date | null;
   scheduledEnd?: Date | null;
   durationMins: number;
@@ -76,6 +78,8 @@ export async function upsertJobEvent(
   const start = job.scheduledStart ? new Date(job.scheduledStart) : new Date();
   const segments = workdaySegments(start, job.durationMins);
   const multiDay = segments.length > 1;
+  // Colour the event by company so the Google Calendar is visually grouped.
+  const colorId = googleColorId(job);
 
   const ids: string[] = [];
   for (let i = 0; i < segments.length; i++) {
@@ -89,6 +93,7 @@ export async function upsertJobEvent(
         summary,
         description: buildDescription(job, docLinks),
         location: job.address || undefined,
+        colorId,
         start: { dateTime: wallClock(seg.start), timeZone: tz },
         end: { dateTime: wallClock(seg.end), timeZone: tz },
         extendedProperties: { private: { joineryflowJobId: job.id } },
