@@ -16,7 +16,12 @@ export async function POST(req: Request) {
   if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
   const email = (body.email || "").trim().toLowerCase();
-  if (!email || !email.includes("@")) return json({ error: "A valid email is required" }, 400);
+  // Accept either a full email address or a bare company domain.
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isDomain = /^[^\s@]+\.[^\s@]+$/.test(email);
+  if (!isEmail && !isDomain) {
+    return json({ error: "Enter a valid email address or company domain" }, 400);
+  }
 
   const source = await prisma.leadSource.upsert({
     where: { email },

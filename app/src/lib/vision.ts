@@ -40,6 +40,7 @@ export async function extractJobsFromEmail(input: {
   subject: string;
   body: string;
   images: JobImage[];
+  pdfs?: JobImage[];
 }): Promise<ExtractedJob[] | null> {
   if (!visionConfigured()) return null;
 
@@ -49,10 +50,20 @@ export async function extractJobsFromEmail(input: {
   const content: Anthropic.ContentBlockParam[] = input.images
     .map((img) => ({ ...img, media: mediaType(img.mimeType) }))
     .filter((img) => img.media)
+    .slice(0, 16)
     .map((img) => ({
       type: "image" as const,
       source: { type: "base64" as const, media_type: img.media!, data: img.data.toString("base64") },
     }));
+
+  // Attach PDFs (drawings / purchase orders) as documents so the model can read
+  // site addresses, PO numbers, etc. Cap to keep the request well under limits.
+  for (const pdf of (input.pdfs || []).slice(0, 5)) {
+    content.push({
+      type: "document",
+      source: { type: "base64", media_type: "application/pdf", data: pdf.data.toString("base64") },
+    } as Anthropic.ContentBlockParam);
+  }
 
   content.push({
     type: "text",

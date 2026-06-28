@@ -30,14 +30,18 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
     if (exists) continue;
 
     const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
+    const pdfAttachments = m.attachments.filter(
+      (a) => a.mimeType === "application/pdf" || /\.pdf$/i.test(a.filename)
+    );
 
-    // Ask AI to split the email (text + images) into its distinct jobs.
+    // Ask AI to split the email (text + images + PDFs) into its distinct jobs.
     let extracted: Awaited<ReturnType<typeof extractJobsFromEmail>> = null;
     if (visionConfigured()) {
       extracted = await extractJobsFromEmail({
         subject: m.subject,
         body: m.body || m.snippet || "",
         images: imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
+        pdfs: pdfAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
       });
     }
 
@@ -132,10 +136,11 @@ function combineDateTime(date?: string, time?: string): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Domains catch every staff member at a company (emily@, steve@, service@, …).
 const DEFAULT_SOURCES = [
-  { name: "mii Kitchens", email: "emily@miikitchen.com.au" },
-  { name: "Harrington Kitchens", email: "service@harringtonkitchens.com.au" },
-  { name: "Peter Baldwin (Ingenuity Joinery)", email: "peter.baldwin@ingenuityjoinery.com" },
+  { name: "mii Kitchens", email: "miikitchen.com.au" },
+  { name: "Harrington Kitchens", email: "harringtonkitchens.com.au" },
+  { name: "Peter Baldwin (Ingenuity Joinery)", email: "ingenuityjoinery.com" },
 ];
 
 /** Ensures the user's three default trusted senders exist (idempotent). */
