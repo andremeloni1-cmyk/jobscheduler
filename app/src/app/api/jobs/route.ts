@@ -22,7 +22,7 @@ export async function GET(req: Request) {
       documents: true,
       reports: {
         orderBy: { updatedAt: "desc" },
-        select: { id: true, status: true, sentAt: true, updatedAt: true },
+        select: { id: true, status: true, sentAt: true, updatedAt: true, data: true },
       },
       _count: { select: { reports: true } },
     },

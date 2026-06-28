@@ -39,14 +39,21 @@ export async function draftReport(ctx: ReportContext): Promise<ReportData | null
         {
           role: "user",
           content:
-            "You are drafting a professional maintenance / handover report for a completed joinery job, " +
-            "for the joiner to review, edit, and send to the client. Base it strictly on the job context below — " +
-            "do not invent measurements, prices, or facts that aren't implied. Where the work spans multiple rooms " +
-            "or areas, split the work into a per-room breakdown. Keep language clear and client-friendly.\n\n" +
+            "You are drafting a professional completion / handover report for a joinery install job (e.g. a " +
+            "kitchen, bathroom, laundry, or wardrobe installation), for the joiner to review, tick off, and send " +
+            "to the client. Base it strictly on the job context below — do not invent measurements, prices, or " +
+            "facts that aren't implied. Keep language clear and client-friendly.\n\n" +
             `--- JOB CONTEXT ---\n${facts}\n--- END CONTEXT ---\n\n` +
-            "Respond as JSON with: workCarried (overall summary), rooms (array of {name, work} — one per room/area, " +
-            "omit if single-area), materialsUsed, findings, recommendations, condition (one of: Good, Fair, Needs attention). " +
-            "Leave a field as an empty string if there isn't enough information.",
+            "Respond as JSON with:\n" +
+            "- scope: a short scope-of-work label, e.g. \"Kitchen installation\" or \"Bathroom vanity install\".\n" +
+            "- jobType: one of kitchen, bathroom, laundry, wardrobe, other.\n" +
+            "- workCarried: a short overall summary.\n" +
+            "- rooms: one entry per room/area, each { name, work (brief notes), items: array of short completion-" +
+            "checklist steps a fitter would tick off for THIS kind of job (e.g. \"Benchtop fitted\", \"Doors & " +
+            "drawers aligned\", \"Silicone & sealing complete\", \"Site cleaned\"). Tailor the items to the job type " +
+            "and what the context implies. Provide 5-10 items per room.\n" +
+            "- materialsUsed, findings, recommendations, condition (Good | Fair | Needs attention).\n" +
+            "Leave a field as an empty string (or empty array) if there isn't enough information.",
         },
       ],
       output_config: {
@@ -55,6 +62,8 @@ export async function draftReport(ctx: ReportContext): Promise<ReportData | null
           schema: {
             type: "object",
             properties: {
+              scope: { type: "string" },
+              jobType: { type: "string" },
               workCarried: { type: "string" },
               materialsUsed: { type: "string" },
               findings: { type: "string" },
@@ -64,8 +73,12 @@ export async function draftReport(ctx: ReportContext): Promise<ReportData | null
                 type: "array",
                 items: {
                   type: "object",
-                  properties: { name: { type: "string" }, work: { type: "string" } },
-                  required: ["name", "work"],
+                  properties: {
+                    name: { type: "string" },
+                    work: { type: "string" },
+                    items: { type: "array", items: { type: "string" } },
+                  },
+                  required: ["name"],
                   additionalProperties: false,
                 },
               },
@@ -80,8 +93,19 @@ export async function draftReport(ctx: ReportContext): Promise<ReportData | null
     if (res.stop_reason === "refusal") return null;
     const text = res.content.find((b) => b.type === "text");
     if (!text || text.type !== "text") return null;
-    const parsed = JSON.parse(text.text) as ReportData;
-    return parsed;
+    // The model returns checklist items as plain strings; convert them to
+    // {label, done:false} so they render as tickable checklist items.
+    const raw = JSON.parse(text.text) as Omit<ReportData, "rooms"> & {
+      rooms?: { name: string; work?: string; items?: string[] }[];
+    };
+    return {
+      ...raw,
+      rooms: (raw.rooms || []).map((r) => ({
+        name: r.name,
+        work: r.work || "",
+        items: (r.items || []).map((label) => ({ label, done: false })),
+      })),
+    };
   } catch {
     return null;
   }
