@@ -8,6 +8,7 @@ type SettingsData = {
   account: { name: string | null; email: string; googleEmail: string | null; calendarId: string } | null;
   templates: Template[];
   google: { configured: boolean; connected: boolean };
+  ai?: { configured: boolean };
 };
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -151,6 +152,19 @@ export default function SettingsPage() {
           <strong>company domain</strong> (e.g. <code>miikitchen.com.au</code>) to catch every staff member, or a
           specific email address. The app checks automatically, or tap “Check inbox for new jobs” on the Jobs screen.
         </p>
+
+        {/* AI status — needed to split multi-job emails and read images/PDFs */}
+        <div
+          className={`mb-3 rounded-xl px-4 py-2.5 text-sm ${
+            data.ai?.configured ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          {data.ai?.configured ? (
+            <>✓ AI reading is on — multi-job emails are split and images/PDFs are read.</>
+          ) : (
+            <>AI reading is <strong>off</strong>. Add <code>ANTHROPIC_API_KEY</code> to the server <code>.env</code> and reload to split multi-job emails and read images/PDFs. Until then, each email becomes a single lead.</>
+          )}
+        </div>
         <div className="space-y-2">
           {sources.map((s) => (
             <div key={s.id} className="flex items-center gap-3 rounded-xl bg-stone-50 px-3 py-2.5">

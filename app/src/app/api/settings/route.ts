@@ -23,6 +23,9 @@ export async function GET() {
       configured: googleConfigured(),
       connected: await isGoogleConnected(),
     },
+    ai: {
+      configured: Boolean(process.env.ANTHROPIC_API_KEY),
+    },
   });
 }
 
