@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "./Modal";
 import { toLocalInput } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
+import { WORKDAY_MINS, jobEnd } from "@/lib/schedule";
 
 export function RescheduleModal({
   job,
@@ -17,14 +18,14 @@ export function RescheduleModal({
   onDone: () => void;
 }) {
   const [start, setStart] = useState("");
-  const [duration, setDuration] = useState("120");
+  const [duration, setDuration] = useState(String(WORKDAY_MINS));
   const [notify, setNotify] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Initialise fields when a job is selected.
   if (job && open && start === "" && job.scheduledStart) {
     setStart(toLocalInput(job.scheduledStart));
-    setDuration(String(job.durationMins || 120));
+    setDuration(String(job.durationMins || WORKDAY_MINS));
   }
 
   async function save() {
@@ -32,8 +33,8 @@ export function RescheduleModal({
     setSaving(true);
     try {
       const s = start ? new Date(start) : null;
-      const dur = parseInt(duration, 10) || 120;
-      const e = s ? new Date(s.getTime() + dur * 60_000) : null;
+      const dur = parseInt(duration, 10) || WORKDAY_MINS;
+      const e = s ? jobEnd(s, dur) : null;
       await api(`/api/jobs/${job.id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -60,8 +61,23 @@ export function RescheduleModal({
           <input className="input" type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
         <div>
-          <label className="label">Duration (mins)</label>
+          <label className="label">Duration</label>
+          <div className="mb-2 flex gap-2">
+            {[1, 2, 3, 4].map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDuration(String(d * WORKDAY_MINS))}
+                className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+                  parseInt(duration, 10) === d * WORKDAY_MINS ? "bg-brand-600 text-white" : "bg-stone-100 text-stone-600"
+                }`}
+              >
+                {d} day{d > 1 ? "s" : ""}
+              </button>
+            ))}
+          </div>
           <input className="input" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
+          <p className="mt-1 text-xs text-stone-400">Minutes. One work day = {WORKDAY_MINS} (6:30am–3:00pm). Multi-day jobs spill onto the next working days.</p>
         </div>
         <label className="flex items-center gap-3 text-sm text-stone-700">
           <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="h-5 w-5 rounded accent-brand-600" />

@@ -29,18 +29,23 @@ export type ExtractedJob = {
   date?: string; // YYYY-MM-DD if a date is stated
   time?: string; // HH:mm 24h if a time is stated
   durationMins?: number;
+  days?: number; // estimated number of working days (for multi-day installs)
+  attachments?: string[]; // exact attachment filenames belonging to this job
 };
 
 /**
  * Reads a job enquiry email (text + any attached images) and splits it into the
  * separate jobs it contains, each with its own details. Returns null when AI is
  * not configured or on error, [] when no jobs could be extracted.
+ *
+ * PDFs are NOT sent to the model (too costly) — only their filenames are listed,
+ * so the model can match each attachment to the right job by name.
  */
 export async function extractJobsFromEmail(input: {
   subject: string;
   body: string;
   images: JobImage[];
-  pdfs?: JobImage[];
+  pdfNames?: string[];
 }): Promise<ExtractedJob[] | null> {
   if (!visionConfigured()) return null;
 
@@ -56,19 +61,17 @@ export async function extractJobsFromEmail(input: {
       source: { type: "base64" as const, media_type: img.media!, data: img.data.toString("base64") },
     }));
 
-  // Attach PDFs (drawings / purchase orders) as documents so the model can read
-  // site addresses, PO numbers, etc. Cap to keep the request well under limits.
-  for (const pdf of (input.pdfs || []).slice(0, 5)) {
-    content.push({
-      type: "document",
-      source: { type: "base64", media_type: "application/pdf", data: pdf.data.toString("base64") },
-    } as Anthropic.ContentBlockParam);
-  }
+  const pdfList = (input.pdfNames || []).filter(Boolean);
+  const attachmentsNote = pdfList.length
+    ? `Attached PDF files (NOT shown — match by filename only): ${pdfList.map((n) => `"${n}"`).join(", ")}. ` +
+      "For each job, list in `attachments` the exact filename(s) above that belong to it (e.g. its drawing or " +
+      "purchase order), matching on the quote/reference number or site name in the filename. Leave it empty if unsure.\n\n"
+    : "";
 
   content.push({
     type: "text",
     text:
-      "This is an email (with any attached images/PDFs) from a kitchen/joinery company. " +
+      "This is an email (with any attached job-sheet images) from a kitchen/joinery company. " +
       "Your task: identify only GENUINELY NEW jobs that need to be booked in / installed.\n\n" +
       "IMPORTANT — do NOT create jobs from, and return an EMPTY array for, emails that are: " +
       "maintenance reports or requests for a maintenance report; requests to send photos/images/" +
@@ -76,10 +79,14 @@ export async function extractJobsFromEmail(input: {
       "or anything that isn't new work to schedule. When in doubt, leave it out.\n\n" +
       "For each NEW job capture: a short title (include the quote/reference number like QU#### if shown); " +
       "a description with all relevant details (measurements, materials, quantities, room/area); the site " +
-      "address if stated; a date (YYYY-MM-DD) and time (HH:mm, 24h) ONLY if explicitly given; and an " +
-      "estimated durationMins if obvious. Never invent dates, addresses, or measurements not present.\n\n" +
+      "address if stated. CRUCIAL: extract the install/delivery/booking `date` (YYYY-MM-DD) whenever one is " +
+      "stated anywhere in the email or images — that is the date the job is scheduled to. Include `time` " +
+      "(HH:mm, 24h) only if explicitly given. If the work clearly spans multiple days, set `days` to the " +
+      "number of working days; otherwise set an estimated `durationMins` if obvious. Never invent dates, " +
+      "addresses, or measurements that are not present.\n\n" +
+      attachmentsNote +
       `Email subject: ${input.subject}\n\nEmail body:\n${input.body || "(no text body)"}\n\n` +
-      "Respond as JSON: { jobs: [ { title, description, address, date, time, durationMins } ] }. " +
+      "Respond as JSON: { jobs: [ { title, description, address, date, time, durationMins, days, attachments } ] }. " +
       "Return an empty array if there are no new bookable jobs.",
   });
 
@@ -105,6 +112,8 @@ export async function extractJobsFromEmail(input: {
                     date: { type: "string" },
                     time: { type: "string" },
                     durationMins: { type: "number" },
+                    days: { type: "number" },
+                    attachments: { type: "array", items: { type: "string" } },
                   },
                   required: ["title", "description"],
                   additionalProperties: false,

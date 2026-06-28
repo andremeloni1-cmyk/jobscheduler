@@ -36,6 +36,20 @@ async function jobDocLinks(jobId: string): Promise<string[]> {
  * Feature 1 + 3: ensure a calendar event exists for a scheduled job, with the
  * job's Drive document links embedded so they open from the event.
  */
+function parseEventIds(job: Job): string[] {
+  const ids: string[] = [];
+  if (job.googleEventIds) {
+    try {
+      const arr = JSON.parse(job.googleEventIds);
+      if (Array.isArray(arr)) ids.push(...arr.filter((x) => typeof x === "string"));
+    } catch {
+      /* ignore */
+    }
+  }
+  if (job.googleEventId && !ids.includes(job.googleEventId)) ids.push(job.googleEventId);
+  return ids;
+}
+
 export async function syncCalendar(job: Job): Promise<void> {
   if (!isScheduledStatus(job.status)) return;
   // Don't put undated jobs on the calendar — wait until a start time is set.
@@ -44,21 +58,31 @@ export async function syncCalendar(job: Job): Promise<void> {
     return;
   }
   const links = await jobDocLinks(job.id);
-  const eventId = await upsertJobEvent(job, links);
-  if (eventId && eventId !== job.googleEventId) {
-    await prisma.job.update({ where: { id: job.id }, data: { googleEventId: eventId } });
-    await logActivity(job.id, "calendar", "Added to Google Calendar", { eventId });
-  } else if (eventId) {
-    await logActivity(job.id, "calendar", "Updated Google Calendar event", { eventId });
+  const previousIds = parseEventIds(job);
+  const eventIds = await upsertJobEvent(job, links, previousIds);
+  if (eventIds && eventIds.length > 0) {
+    await prisma.job.update({
+      where: { id: job.id },
+      data: { googleEventId: eventIds[0], googleEventIds: JSON.stringify(eventIds) },
+    });
+    const wasNew = previousIds.length === 0;
+    const note =
+      eventIds.length > 1
+        ? `${wasNew ? "Added" : "Updated"} Google Calendar — ${eventIds.length} working days`
+        : wasNew
+          ? "Added to Google Calendar"
+          : "Updated Google Calendar event";
+    await logActivity(job.id, "calendar", note, { eventIds });
   } else {
     await logActivity(job.id, "calendar", "Scheduled (demo mode — connect Google to sync)");
   }
 }
 
 export async function removeCalendar(job: Job): Promise<void> {
-  if (!job.googleEventId) return;
-  const ok = await deleteJobEvent(job.googleEventId);
-  await prisma.job.update({ where: { id: job.id }, data: { googleEventId: null } });
+  const ids = parseEventIds(job);
+  if (ids.length === 0) return;
+  const ok = await deleteJobEvent(ids);
+  await prisma.job.update({ where: { id: job.id }, data: { googleEventId: null, googleEventIds: null } });
   await logActivity(job.id, "calendar", ok ? "Removed from Google Calendar" : "Calendar event cleared");
 }
 

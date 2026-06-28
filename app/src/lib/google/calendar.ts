@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { getAuthorizedClient } from "./oauth";
 import { prisma } from "@/lib/db";
+import { workdaySegments, businessTimeZone } from "@/lib/schedule";
 
 type JobLike = {
   id: string;
@@ -21,12 +22,11 @@ async function calendarId(): Promise<string> {
   return account?.calendarId || "primary";
 }
 
-function eventTimes(job: JobLike): { start: Date; end: Date } {
-  const start = job.scheduledStart ? new Date(job.scheduledStart) : new Date();
-  const end = job.scheduledEnd
-    ? new Date(job.scheduledEnd)
-    : new Date(start.getTime() + job.durationMins * 60_000);
-  return { start, end };
+/** Wall-clock "YYYY-MM-DDTHH:mm:ss" (no offset) so Google applies the business
+ * timeZone, keeping 6:30am as 6:30am regardless of the server's timezone. */
+function wallClock(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
 }
 
 function buildDescription(job: JobLike, docLinks: string[] = []): string {
@@ -47,40 +47,56 @@ function buildDescription(job: JobLike, docLinks: string[] = []): string {
 }
 
 /**
- * Creates (or updates if one already exists) a Google Calendar event for a job.
- * Returns the event id, or null in demo mode (Google not connected).
+ * Syncs a job to Google Calendar as one event per working day (6:30am–3:00pm),
+ * so multi-day jobs show across each day. Previous events for the job are
+ * removed first (the day-count can change), then fresh events are inserted.
+ * Returns the new event ids, or null in demo mode (Google not connected).
  */
 export async function upsertJobEvent(
   job: JobLike,
-  docLinks: string[] = []
-): Promise<string | null> {
+  docLinks: string[] = [],
+  previousEventIds: string[] = []
+): Promise<string[] | null> {
   const auth = await getAuthorizedClient();
   if (!auth) return null;
 
   const calendar = google.calendar({ version: "v3", auth });
   const calId = await calendarId();
-  const { start, end } = eventTimes(job);
+  const tz = businessTimeZone();
 
-  const requestBody = {
-    summary: `🔨 ${job.title}`,
-    description: buildDescription(job, docLinks),
-    location: job.address || undefined,
-    start: { dateTime: start.toISOString() },
-    end: { dateTime: end.toISOString() },
-    extendedProperties: { private: { joineryflowJobId: job.id } },
-  };
-
-  if (job.googleEventId) {
-    const res = await calendar.events.update({
-      calendarId: calId,
-      eventId: job.googleEventId,
-      requestBody,
-    });
-    return res.data.id || job.googleEventId;
+  // Clear any events we created before (count may change between syncs).
+  for (const id of previousEventIds) {
+    try {
+      await calendar.events.delete({ calendarId: calId, eventId: id });
+    } catch {
+      /* already gone */
+    }
   }
 
-  const res = await calendar.events.insert({ calendarId: calId, requestBody });
-  return res.data.id || null;
+  const start = job.scheduledStart ? new Date(job.scheduledStart) : new Date();
+  const segments = workdaySegments(start, job.durationMins);
+  const multiDay = segments.length > 1;
+
+  const ids: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const summary = multiDay
+      ? `🔨 ${job.title} (day ${i + 1}/${segments.length})`
+      : `🔨 ${job.title}`;
+    const res = await calendar.events.insert({
+      calendarId: calId,
+      requestBody: {
+        summary,
+        description: buildDescription(job, docLinks),
+        location: job.address || undefined,
+        start: { dateTime: wallClock(seg.start), timeZone: tz },
+        end: { dateTime: wallClock(seg.end), timeZone: tz },
+        extendedProperties: { private: { joineryflowJobId: job.id } },
+      },
+    });
+    if (res.data.id) ids.push(res.data.id);
+  }
+  return ids;
 }
 
 export type ExternalEvent = {
@@ -124,15 +140,21 @@ export async function listEvents(timeMin: Date, timeMax: Date): Promise<External
     .filter((e) => e.start);
 }
 
-export async function deleteJobEvent(googleEventId?: string | null): Promise<boolean> {
-  if (!googleEventId) return false;
+export async function deleteJobEvent(eventIds?: string | string[] | null): Promise<boolean> {
+  const ids = (Array.isArray(eventIds) ? eventIds : [eventIds]).filter(Boolean) as string[];
+  if (ids.length === 0) return false;
   const auth = await getAuthorizedClient();
   if (!auth) return false;
   const calendar = google.calendar({ version: "v3", auth });
-  try {
-    await calendar.events.delete({ calendarId: await calendarId(), eventId: googleEventId });
-    return true;
-  } catch {
-    return false; // already gone
+  const calId = await calendarId();
+  let any = false;
+  for (const id of ids) {
+    try {
+      await calendar.events.delete({ calendarId: calId, eventId: id });
+      any = true;
+    } catch {
+      /* already gone */
+    }
   }
+  return any;
 }

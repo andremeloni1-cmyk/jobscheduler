@@ -5,6 +5,7 @@ import { isGoogleConnected } from "@/lib/google/oauth";
 import { logActivity } from "@/lib/automations";
 import { nextReference } from "@/lib/utils";
 import { extractJobsFromEmail, visionConfigured } from "@/lib/vision";
+import { WORKDAY_MINS, jobEnd } from "@/lib/schedule";
 
 const IMAGE_RE = /^image\//i;
 // Subjects that are clearly NOT new jobs to book (common misspellings included).
@@ -47,14 +48,16 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
       (a) => a.mimeType === "application/pdf" || /\.pdf$/i.test(a.filename)
     );
 
-    // Ask AI to split the email (text + images + PDFs) into its distinct jobs.
+    // Ask AI to split the email (text + images) into its distinct jobs. PDFs are
+    // not read (cost) — only their filenames are sent so the AI can match each
+    // attachment to the right job.
     let extracted: Awaited<ReturnType<typeof extractJobsFromEmail>> = null;
     if (visionConfigured()) {
       extracted = await extractJobsFromEmail({
         subject: m.subject,
         body: m.body || m.snippet || "",
         images: imageAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
-        pdfs: pdfAttachments.map((a) => ({ filename: a.filename, data: a.data, mimeType: a.mimeType })),
+        pdfNames: pdfAttachments.map((a) => a.filename),
       });
     }
 
@@ -64,20 +67,32 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
       continue;
     }
 
+    // Duration: prefer an explicit multi-day count, else AI minutes, else one work day.
+    const durationFor = (j: { durationMins?: number; days?: number }): number => {
+      if (j.days && j.days > 0) return Math.round(j.days) * WORKDAY_MINS;
+      if (j.durationMins && j.durationMins > 0) return Math.round(j.durationMins);
+      return WORKDAY_MINS;
+    };
+
     // Build the list of jobs to create — AI-split, or a single fallback lead.
-    type NewJob = { title: string; description: string; address?: string | null; start?: Date | null; durationMins: number };
+    type NewJob = {
+      title: string;
+      description: string;
+      address?: string | null;
+      start?: Date | null;
+      durationMins: number;
+      attachments: string[];
+    };
     let toCreate: NewJob[];
     if (extracted && extracted.length > 0) {
-      toCreate = extracted.map((j) => {
-        const start = combineDateTime(j.date, j.time);
-        return {
-          title: j.title?.trim() || "New job",
-          description: j.description?.trim() || "",
-          address: j.address?.trim() || null,
-          start,
-          durationMins: j.durationMins && j.durationMins > 0 ? Math.round(j.durationMins) : 120,
-        };
-      });
+      toCreate = extracted.map((j) => ({
+        title: j.title?.trim() || "New job",
+        description: j.description?.trim() || "",
+        address: j.address?.trim() || null,
+        start: combineDateTime(j.date, j.time),
+        durationMins: durationFor(j),
+        attachments: Array.isArray(j.attachments) ? j.attachments : [],
+      }));
     } else {
       toCreate = [
         {
@@ -85,13 +100,16 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
           description: (m.body || m.snippet || "").slice(0, 1500),
           address: null,
           start: null,
-          durationMins: 120,
+          durationMins: WORKDAY_MINS,
+          attachments: [],
         },
       ];
     }
 
     const createdJobs = [];
-    for (const nj of toCreate) {
+    const jobByFilename = new Map<string, string>(); // attachment filename -> jobId
+    for (let i = 0; i < toCreate.length; i++) {
+      const nj = toCreate[i];
       const job = await prisma.job.create({
         data: {
           reference: await nextReference(),
@@ -105,20 +123,24 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
           gmailMessageId: m.messageId,
           gmailThreadId: m.threadId,
           scheduledStart: nj.start,
-          scheduledEnd: nj.start ? new Date(nj.start.getTime() + nj.durationMins * 60_000) : null,
+          scheduledEnd: nj.start ? jobEnd(nj.start, nj.durationMins) : null,
           durationMins: nj.durationMins,
         },
       });
       createdJobs.push(job);
       created++;
+      for (const fn of nj.attachments) jobByFilename.set(fn, job.id);
     }
 
-    // File the email's attachments into the first job's Drive folder.
+    // File each attachment into its matching job's Drive folder (AI-matched by
+    // filename), falling back to the first job.
     const primary = createdJobs[0];
     if (primary) {
       for (const att of m.attachments) {
+        const targetId = jobByFilename.get(att.filename) || primary.id;
+        const target = createdJobs.find((j) => j.id === targetId) || primary;
         const uploaded = await uploadToJobFolder(
-          { id: primary.id, reference: primary.reference, title: primary.title },
+          { id: target.id, reference: target.reference, title: target.title },
           att.filename,
           att.data,
           att.mimeType
@@ -126,7 +148,7 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
         if (uploaded) {
           await prisma.document.create({
             data: {
-              jobId: primary.id,
+              jobId: target.id,
               name: uploaded.name,
               driveFileId: uploaded.fileId,
               webViewLink: uploaded.webViewLink,
@@ -149,10 +171,11 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
   return { created, connected: true };
 }
 
-/** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null. */
+/** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null.
+ * Defaults to the standard work-day start (06:30) when no time is given. */
 function combineDateTime(date?: string, time?: string): Date | null {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "08:00";
+  const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "06:30";
   const d = new Date(`${date}T${t}:00`);
   return isNaN(d.getTime()) ? null : d;
 }
