@@ -147,8 +147,9 @@ export default function SettingsPage() {
       <div className="card mb-4 p-4">
         <h2 className="mb-1 font-semibold text-stone-900">Incoming jobs</h2>
         <p className="mb-3 text-sm text-stone-500">
-          Emails from these senders become job leads for you to approve. The app checks automatically, or tap
-          “Check inbox for new jobs” on the Jobs screen.
+          Emails from these senders become job leads for you to approve. Add a whole{" "}
+          <strong>company domain</strong> (e.g. <code>miikitchen.com.au</code>) to catch every staff member, or a
+          specific email address. The app checks automatically, or tap “Check inbox for new jobs” on the Jobs screen.
         </p>
         <div className="space-y-2">
           {sources.map((s) => (
@@ -172,7 +173,7 @@ export default function SettingsPage() {
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <input className="input" placeholder="Company name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} />
-          <input className="input" placeholder="email@company.com" value={newSourceEmail} onChange={(e) => setNewSourceEmail(e.target.value)} />
+          <input className="input" placeholder="company.com or email@company.com" value={newSourceEmail} onChange={(e) => setNewSourceEmail(e.target.value)} />
           <button className="btn-secondary" onClick={addSource}>Add</button>
         </div>
       </div>
