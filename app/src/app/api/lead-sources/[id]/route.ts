@@ -12,6 +12,11 @@ export async function PATCH(req: Request, { params }: Params) {
   const data: Record<string, unknown> = {};
   if ("enabled" in body) data.enabled = Boolean(body.enabled);
   if ("name" in body) data.name = body.name;
+  // Per-company email overrides: store as a JSON string, or clear with null.
+  if ("templates" in body) {
+    data.templates =
+      body.templates == null ? null : typeof body.templates === "string" ? body.templates : JSON.stringify(body.templates);
+  }
   const source = await prisma.leadSource.update({ where: { id: params.id }, data });
   return json({ source });
 }

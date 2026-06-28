@@ -81,6 +81,35 @@ export async function uploadToJobFolder(
   const folderId = await ensureJobFolder(job);
   const drive = google.drive({ version: "v3", auth });
 
+  // Dedupe: if a file with this name already exists in the job's folder, update
+  // it in place instead of adding another copy. This stops the folder filling up
+  // with duplicates when plans are re-attached or a report is regenerated.
+  if (folderId) {
+    const escaped = name.replace(/'/g, "\\'");
+    const found = await drive.files
+      .list({
+        q: `name='${escaped}' and '${folderId}' in parents and trashed=false`,
+        fields: "files(id, name, webViewLink, mimeType)",
+        spaces: "drive",
+      })
+      .catch(() => null);
+    const existing = found?.data.files?.[0];
+    if (existing?.id) {
+      const updated = await drive.files.update({
+        fileId: existing.id,
+        media: { mimeType, body: Readable.from(data) },
+        fields: "id, name, webViewLink, mimeType",
+      });
+      return {
+        fileId: updated.data.id || existing.id,
+        name: updated.data.name || existing.name || name,
+        webViewLink:
+          updated.data.webViewLink || existing.webViewLink || `https://drive.google.com/file/d/${existing.id}/view`,
+        mimeType: updated.data.mimeType || mimeType,
+      };
+    }
+  }
+
   const created = await drive.files.create({
     requestBody: { name, parents: folderId ? [folderId] : undefined },
     media: { mimeType, body: Readable.from(data) },

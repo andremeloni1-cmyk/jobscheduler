@@ -4,7 +4,7 @@ import { sendEmail } from "@/lib/google/gmail";
 import { findJobPdfAttachments } from "@/lib/google/gmail";
 import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
-import { jobTemplateVars, renderTemplate } from "@/lib/email-templates";
+import { jobTemplateVars, resolveTemplate } from "@/lib/email-templates";
 import { isScheduledStatus } from "@/lib/types";
 import type { Job } from "@prisma/client";
 
@@ -98,7 +98,7 @@ export async function sendClientEmail(job: Job, key: "accepted" | "moved" | "can
     await logActivity(job.id, "email", `No client email on file — ${key} notice not sent`);
     return;
   }
-  const tpl = await renderTemplate(key, jobTemplateVars(job, await ownerName()));
+  const tpl = await resolveTemplate(job, key, jobTemplateVars(job, await ownerName()));
   if (!tpl || !tpl.enabled) return;
 
   const sent = await sendEmail({ to: job.clientEmail, subject: tpl.subject, body: tpl.body });

@@ -16,6 +16,7 @@ export async function GET() {
           email: account.email,
           googleEmail: account.googleEmail,
           calendarId: account.calendarId,
+          signature: account.signature,
         }
       : null,
     templates,
@@ -41,6 +42,7 @@ export async function PATCH(req: Request) {
         data: {
           name: body.account.name ?? account.name,
           calendarId: body.account.calendarId ?? account.calendarId,
+          signature: "signature" in body.account ? body.account.signature || null : account.signature,
         },
       });
     }
