@@ -106,12 +106,23 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
       continue;
     }
 
-    type NewJob = { title: string; description: string; address?: string | null; start?: Date | null; durationMins: number; attachments: string[] };
+    type NewJob = {
+      title: string;
+      description: string;
+      clientName?: string | null;
+      clientPhone?: string | null;
+      address?: string | null;
+      start?: Date | null;
+      durationMins: number;
+      attachments: string[];
+    };
     const toCreate: NewJob[] =
       extracted && extracted.length > 0
         ? extracted.map((j) => ({
             title: j.title?.trim() || "New job",
             description: j.description?.trim() || "",
+            clientName: j.clientName?.trim() || null,
+            clientPhone: j.clientPhone?.trim() || null,
             address: j.address?.trim() || null,
             start: combineDateTime(j.date, j.time),
             durationMins: durationFor(j),
@@ -121,6 +132,8 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
             {
               title: m.subject.replace(/^(re:|fwd:)\s*/i, "").trim() || "New enquiry",
               description: (m.body || m.snippet || "").slice(0, 1500),
+              clientName: null,
+              clientPhone: null,
               address: null,
               start: null,
               durationMins: WORKDAY_MINS,
@@ -168,7 +181,8 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
           description: nj.description,
           status: "lead",
           address: nj.address,
-          clientName: m.fromName,
+          clientName: nj.clientName || m.fromName,
+          clientPhone: nj.clientPhone,
           clientEmail: m.fromEmail,
           leadSource: m.fromEmail,
           gmailMessageId: m.messageId,
@@ -185,10 +199,10 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
     }
 
     // Moved/cancelled detection: a confirmed/scheduled job from this company that
-    // falls in the next ~2 weeks but isn't in their latest email is probably
-    // moved or cancelled — flag it for review (never auto-delete).
+    // falls within the window the schedule covers (~5 weeks) but isn't in their
+    // latest email is probably moved or cancelled — flag it (never auto-delete).
     const now = Date.now();
-    const horizon = now + 14 * 86_400_000;
+    const horizon = now + 35 * 86_400_000;
     for (const j of existing) {
       if (matchedIds.has(j.id)) continue;
       if (!["accepted", "scheduled", "in_progress"].includes(j.status)) continue;

@@ -150,6 +150,15 @@ model LeadSource {
   createdAt DateTime @default(now())
 }
 
+// Web Push subscriptions (one per device that opted in to notifications).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
 // Editable templates for the automated client emails.
 model EmailTemplate {
   id        String   @id @default(cuid())

@@ -1,6 +1,7 @@
 import { json } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { scanForLeads } from "@/lib/leads";
+import { sendPush } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,17 @@ export async function POST(req: Request) {
   try {
     // Manual checks look back a month so older/dismissed emails can return;
     // the scheduled Friday run only scans the past week's batch.
-    const result = await scanForLeads({ force, sinceDays: force ? 30 : 7 });
+    const result = await scanForLeads({ force, sinceDays: force ? 30 : 14 });
+
+    // Notify subscribed devices when the (especially scheduled) scan turns up work.
+    if (result.connected && (result.created > 0 || result.flagged > 0)) {
+      const parts: string[] = [];
+      if (result.created) parts.push(`${result.created} new to confirm`);
+      if (result.plans) parts.push(`${result.plans} plans arrived`);
+      if (result.flagged) parts.push(`${result.flagged} to review`);
+      await sendPush({ title: "JoineryFlow — inbox checked", body: parts.join(" · "), url: "/" }).catch(() => {});
+    }
+
     return json({ ok: true, ...result });
   } catch (e) {
     return json({ ok: false, error: e instanceof Error ? e.message : "scan failed" }, 500);

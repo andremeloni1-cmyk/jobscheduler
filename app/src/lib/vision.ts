@@ -25,11 +25,14 @@ function mediaType(mime: string): "image/png" | "image/jpeg" | "image/gif" | "im
 export type ExtractedJob = {
   title: string;
   description: string;
+  reference?: string; // quote/PO number, e.g. QU3082
+  clientName?: string; // builder + contact, e.g. "Fairmont Homes — Greg"
+  clientPhone?: string;
   address?: string;
-  date?: string; // YYYY-MM-DD if a date is stated
+  date?: string; // YYYY-MM-DD install date (the schedule column's date)
   time?: string; // HH:mm 24h if a time is stated
   durationMins?: number;
-  days?: number; // estimated number of working days (for multi-day installs)
+  days?: number; // number of working days (cells the job spans)
   attachments?: string[]; // exact attachment filenames belonging to this job
 };
 
@@ -77,25 +80,30 @@ export async function extractJobsFromEmail(input: {
   content.push({
     type: "text",
     text:
-      `Today's date is ${today}. When a date is written without a year (e.g. "3 July" or "12/8"), ` +
-      "resolve it to the SOONEST upcoming occurrence on or after today — never schedule a job in the past.\n\n" +
-      "This is an email (with any attached job-sheet images) from a kitchen/joinery company. " +
-      "Your task: identify only GENUINELY NEW jobs that need to be booked in / installed.\n\n" +
-      "IMPORTANT — do NOT create jobs from, and return an EMPTY array for, emails that are: " +
-      "maintenance reports or requests for a maintenance report; requests to send photos/images/" +
-      "invoices/paperwork; cancellations or postponements; confirmations or general correspondence; " +
-      "or anything that isn't new work to schedule. When in doubt, leave it out.\n\n" +
-      "For each NEW job capture: a short title (include the quote/reference number like QU#### if shown); " +
-      "a description with all relevant details (measurements, materials, quantities, room/area); the site " +
-      "address if stated. CRUCIAL: extract the install/delivery/booking `date` (YYYY-MM-DD) whenever one is " +
-      "stated anywhere in the email or images — that is the date the job is scheduled to. Include `time` " +
-      "(HH:mm, 24h) only if explicitly given. If the work clearly spans multiple days, set `days` to the " +
-      "number of working days; otherwise set an estimated `durationMins` if obvious. Never invent dates, " +
-      "addresses, or measurements that are not present.\n\n" +
+      `Today's date is ${today}. When a date has no year, resolve it to the SOONEST upcoming occurrence on or after today — never in the past.\n\n` +
+      "This is an email from a kitchen/joinery company assigning installation jobs to a fitter. It usually " +
+      "contains an INSTALLATION SCHEDULE shown as a weekly calendar grid (an attached image and/or a table): " +
+      "the columns are weekdays with a date header like \"Monday June 29\" or \"Friday July 10\", and each " +
+      "filled/coloured cell is one job booked for that day. Blank cells are days with no job.\n\n" +
+      "Read the schedule and extract each distinct job. CRUCIAL rules:\n" +
+      "- The job's install `date` is the DATE OF THE COLUMN the cell sits under (resolve to YYYY-MM-DD). " +
+      "For example a cell under \"Friday July 10\" is scheduled for that Friday.\n" +
+      "- IGNORE any 'CONFIRMED DD.MM.YY' date written INSIDE the cell — that is the confirmation date, NOT the install date.\n" +
+      "- If the SAME job (same QU quote number) appears in several consecutive day cells, it is ONE multi-day job: " +
+      "output it ONCE with `date` = the first day it appears and `days` = the number of cells it spans.\n" +
+      "- A cell typically reads like: 'CONFIRMED 23.06.26 FAIRMONT HOMES GREG 0412 228 232 QU3082 LOT 6207, " +
+      "3 NAUTICA CRESCENT, SHELLCOVE (LAMI) KITCHEN, LAUNDRY, X4 VANITY'. From a cell capture: `reference` = the " +
+      "QU number (e.g. QU3082); `clientName` = the builder and contact person (e.g. 'Fairmont Homes — Greg'); " +
+      "`clientPhone` = the phone number if present; `address` = the lot/street/suburb; `description` = the material " +
+      "(e.g. LAMI/POLY) plus the scope/rooms; `title` = a short name that INCLUDES the QU number (e.g. " +
+      "'QU3082 Fairmont Homes — Shellcove kitchen').\n\n" +
+      "Also handle a plain enquiry email with no grid by extracting the single job it describes.\n\n" +
+      "Do NOT create jobs from, and return an EMPTY array for: maintenance/report requests, requests for photos/" +
+      "paperwork, cancellations, or general correspondence with no bookable job. Never invent dates or addresses.\n\n" +
       attachmentsNote +
       `Email subject: ${input.subject}\n\nEmail body:\n${input.body || "(no text body)"}\n\n` +
-      "Respond as JSON: { jobs: [ { title, description, address, date, time, durationMins, days, attachments } ] }. " +
-      "Return an empty array if there are no new bookable jobs.",
+      "Respond as JSON: { jobs: [ { title, reference, clientName, clientPhone, description, address, date, time, durationMins, days, attachments } ] }. " +
+      "Return an empty array if there are no bookable jobs.",
   });
 
   try {
@@ -115,6 +123,9 @@ export async function extractJobsFromEmail(input: {
                   type: "object",
                   properties: {
                     title: { type: "string" },
+                    reference: { type: "string" },
+                    clientName: { type: "string" },
+                    clientPhone: { type: "string" },
                     description: { type: "string" },
                     address: { type: "string" },
                     date: { type: "string" },

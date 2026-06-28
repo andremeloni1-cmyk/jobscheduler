@@ -128,3 +128,50 @@ export async function uploadToJobFolder(
     mimeType: created.data.mimeType || mimeType,
   };
 }
+
+/**
+ * One-time cleanup: in every job's Drive folder, keep only the newest file of
+ * each name and move the older duplicates to the trash. Returns how many folders
+ * were scanned and files trashed. No-op in demo mode.
+ */
+export async function dedupeJobFolders(): Promise<{ scanned: number; removed: number }> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return { scanned: 0, removed: 0 };
+  const drive = google.drive({ version: "v3", auth });
+
+  const jobs = await prisma.job.findMany({
+    where: { driveFolderId: { not: null } },
+    select: { driveFolderId: true },
+  });
+  const folders = [...new Set(jobs.map((j) => j.driveFolderId).filter(Boolean) as string[])];
+
+  let scanned = 0;
+  let removed = 0;
+  for (const folderId of folders) {
+    scanned++;
+    const res = await drive.files
+      .list({
+        q: `'${folderId}' in parents and trashed=false`,
+        fields: "files(id, name, modifiedTime)",
+        spaces: "drive",
+        pageSize: 1000,
+      })
+      .catch(() => null);
+    const files = res?.data.files || [];
+    const byName = new Map<string, { id: string; modifiedTime?: string }[]>();
+    for (const f of files) {
+      const arr = byName.get(f.name || "") || [];
+      arr.push({ id: f.id!, modifiedTime: f.modifiedTime || undefined });
+      byName.set(f.name || "", arr);
+    }
+    for (const [, arr] of byName) {
+      if (arr.length <= 1) continue;
+      arr.sort((a, b) => (b.modifiedTime || "").localeCompare(a.modifiedTime || "")); // newest first
+      for (const dup of arr.slice(1)) {
+        const ok = await drive.files.update({ fileId: dup.id, requestBody: { trashed: true } }).catch(() => null);
+        if (ok) removed++;
+      }
+    }
+  }
+  return { scanned, removed };
+}
