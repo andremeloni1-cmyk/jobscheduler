@@ -6,7 +6,7 @@ import { isGoogleConnected, googleConfigured } from "@/lib/google/oauth";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const account = await prisma.account.findFirst();
   const templates = await prisma.emailTemplate.findMany({ orderBy: { key: "asc" } });
   return json({
@@ -33,7 +33,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
 
   if (body.account) {

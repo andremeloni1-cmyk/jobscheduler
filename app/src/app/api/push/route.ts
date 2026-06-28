@@ -7,13 +7,13 @@ export const dynamic = "force-dynamic";
 
 // Tells the client whether push is set up and the public VAPID key to subscribe with.
 export async function GET() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   return json({ configured: pushConfigured(), publicKey: vapidPublicKey() });
 }
 
 // Save (or refresh) a device's push subscription.
 export async function POST(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
   const endpoint = body?.endpoint as string | undefined;
   const p256dh = body?.keys?.p256dh as string | undefined;
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
 // Remove a device's subscription (turn notifications off here).
 export async function DELETE(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const body = await req.json().catch(() => ({}));
   const endpoint = body?.endpoint as string | undefined;
   if (endpoint) await prisma.pushSubscription.deleteMany({ where: { endpoint } });

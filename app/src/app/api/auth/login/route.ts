@@ -8,11 +8,11 @@ export async function POST(req: Request) {
   if (!checkPassword(body.password || "")) {
     return json({ error: "Incorrect password" }, 401);
   }
-  setSessionCookie();
+  await setSessionCookie();
   return json({ ok: true });
 }
 
 export async function DELETE() {
-  clearSessionCookie();
+  await clearSessionCookie();
   return json({ ok: true });
 }

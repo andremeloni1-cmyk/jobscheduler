@@ -6,15 +6,15 @@ import { visionConfigured } from "@/lib/vision";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
   if (!visionConfigured()) {
     return json({ ok: false, message: "Add ANTHROPIC_API_KEY on the server to enable AI auto-fill." });
   }
 
   const job = await prisma.job.findUnique({
-    where: { id: params.id },
+    where: { id: (await params).id },
     include: { documents: true },
   });
   if (!job) return json({ error: "not found" }, 404);

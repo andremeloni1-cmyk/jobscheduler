@@ -38,7 +38,7 @@ const ACTIVE = (s: string) => !["completed", "cancelled"].includes(s);
  * populated from real data — including leads imported from email.
  */
 export async function GET() {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
   const jobs = await prisma.job.findMany({ orderBy: { createdAt: "desc" } });
 

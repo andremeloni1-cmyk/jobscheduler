@@ -5,7 +5,7 @@ import { listEvents } from "@/lib/google/calendar";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
   const { searchParams } = new URL(req.url);
   const start = parseDate(searchParams.get("start"));
   const end = parseDate(searchParams.get("end"));

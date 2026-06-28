@@ -8,10 +8,10 @@ import { logActivity } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
-  if (!isAuthenticated()) return json({ error: "unauthorized" }, 401);
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
-  const job = await prisma.job.findUnique({ where: { id: params.id } });
+  const job = await prisma.job.findUnique({ where: { id: (await params).id } });
   if (!job) return json({ error: "not found" }, 404);
 
   if (!visionConfigured()) {

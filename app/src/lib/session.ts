@@ -34,8 +34,9 @@ export function checkPassword(pw: string): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-export function setSessionCookie() {
-  cookies().set(COOKIE, sign("ok"), {
+export async function setSessionCookie() {
+  const store = await cookies();
+  store.set(COOKIE, sign("ok"), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -44,12 +45,14 @@ export function setSessionCookie() {
   });
 }
 
-export function clearSessionCookie() {
-  cookies().delete(COOKIE);
+export async function clearSessionCookie() {
+  const store = await cookies();
+  store.delete(COOKIE);
 }
 
 /** True when the request is allowed (no gate, or valid cookie). */
-export function isAuthenticated(): boolean {
+export async function isAuthenticated(): Promise<boolean> {
   if (!passwordRequired()) return true;
-  return verify(cookies().get(COOKIE)?.value);
+  const store = await cookies();
+  return verify(store.get(COOKIE)?.value);
 }
