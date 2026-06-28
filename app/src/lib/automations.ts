@@ -24,12 +24,16 @@ export async function logActivity(
   });
 }
 
-/** Drive web links for a job's saved documents (for the calendar description). */
+/** Drive web links for a job's PDF documents (for the calendar description).
+ * Only PDFs (the drawing / purchase order) are linked — not inline schedule
+ * images — so the event shows just the exact job PDF. */
 async function jobDocLinks(jobId: string): Promise<string[]> {
   const docs = await prisma.document.findMany({
     where: { jobId, webViewLink: { not: null } },
   });
-  return docs.map((d) => `${d.name}: ${d.webViewLink}`);
+  return docs
+    .filter((d) => d.mimeType === "application/pdf" || /\.pdf$/i.test(d.name))
+    .map((d) => `${d.name}: ${d.webViewLink}`);
 }
 
 /**

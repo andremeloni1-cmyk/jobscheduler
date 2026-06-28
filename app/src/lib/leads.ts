@@ -172,12 +172,21 @@ export async function scanForLeads(): Promise<{ created: number; connected: bool
 }
 
 /** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null.
- * Defaults to the standard work-day start (06:30) when no time is given. */
+ * Defaults to the standard work-day start (06:30) when no time is given.
+ * Safety net: if the AI returned a clearly past date (usually a wrong year),
+ * roll the year forward so new jobs are never booked in the past. */
 function combineDateTime(date?: string, time?: string): Date | null {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "06:30";
-  const d = new Date(`${date}T${t}:00`);
-  return isNaN(d.getTime()) ? null : d;
+  let d = new Date(`${date}T${t}:00`);
+  if (isNaN(d.getTime())) return null;
+
+  // More than a week in the past → almost certainly a wrong year. Bump it.
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+  for (let guard = 0; d < weekAgo && guard < 5; guard++) {
+    d = new Date(d.getFullYear() + 1, d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
+  }
+  return d;
 }
 
 // Domains catch every staff member at a company (emily@, steve@, service@, …).
