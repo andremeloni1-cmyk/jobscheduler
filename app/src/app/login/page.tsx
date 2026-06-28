@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Brand } from "@/components/Brand";
 
 export default function LoginPage() {
   const [password, setPassword] = useState("");
@@ -26,14 +27,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-600 text-white shadow-lg">
-        <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 7l11 11M14 18l6-6-3-3-6 6M3 7l4-4 3 3" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <h1 className="text-2xl font-bold text-stone-900">JoineryFlow</h1>
-      <p className="mb-6 text-sm text-stone-500">Sign in to your workshop dashboard</p>
+    <div className="fade-in flex min-h-screen flex-col items-center justify-center px-6">
+      <Brand variant="hero" tagline="Sign in to your workshop dashboard" />
 
       <form onSubmit={submit} className="w-full max-w-sm space-y-3">
         <input
