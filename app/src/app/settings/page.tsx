@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/job";
+import { NotificationsCard } from "@/components/NotificationsCard";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
@@ -29,7 +30,21 @@ export default function SettingsPage() {
   const [newSourceName, setNewSourceName] = useState("");
   const [newSourceEmail, setNewSourceEmail] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deduping, setDeduping] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  async function dedupeDrive() {
+    setDeduping(true);
+    setMsg(null);
+    try {
+      const r = await api<{ filesRemoved: number; foldersScanned: number }>("/api/maintenance/dedupe-drive", { method: "POST" });
+      setMsg(`Cleaned up ${r.filesRemoved} duplicate file(s) across ${r.foldersScanned} folder(s).`);
+    } catch {
+      setMsg("Couldn't clean up duplicates just now.");
+    } finally {
+      setDeduping(false);
+    }
+  }
 
   async function load() {
     const d = await api<SettingsData>("/api/settings");
@@ -164,6 +179,20 @@ export default function SettingsPage() {
           </p>
         )}
       </div>
+
+      {/* Push notifications */}
+      <NotificationsCard />
+
+      {/* Drive cleanup */}
+      {data.google.connected && (
+        <div className="card mb-4 p-4">
+          <h2 className="mb-1 font-semibold text-stone-900">Drive cleanup</h2>
+          <p className="mb-3 text-sm text-stone-500">Remove duplicate files already sitting in your job folders (keeps the newest copy of each).</p>
+          <button className="btn-secondary w-full" onClick={dedupeDrive} disabled={deduping}>
+            {deduping ? "Cleaning up…" : "Remove duplicate Drive files"}
+          </button>
+        </div>
+      )}
 
       {/* Incoming job sources */}
       <div className="card mb-4 p-4">
