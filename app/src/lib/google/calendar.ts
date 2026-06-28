@@ -145,6 +145,39 @@ export async function listEvents(timeMin: Date, timeMax: Date): Promise<External
     .filter((e) => e.start);
 }
 
+/**
+ * Reads back the events this app created (tagged with joineryflowJobId), returning
+ * the earliest event start per job. Used to detect jobs the owner moved directly
+ * in Google Calendar so the app can reflect the change. Empty in demo mode.
+ */
+export async function listJobEventStarts(): Promise<Map<string, { start: Date; allDay: boolean }>> {
+  const out = new Map<string, { start: Date; allDay: boolean }>();
+  const auth = await getAuthorizedClient();
+  if (!auth) return out;
+
+  const calendar = google.calendar({ version: "v3", auth });
+  const now = Date.now();
+  const res = await calendar.events.list({
+    calendarId: await calendarId(),
+    timeMin: new Date(now - 14 * 86_400_000).toISOString(),
+    timeMax: new Date(now + 120 * 86_400_000).toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+    maxResults: 2500,
+  });
+
+  for (const e of res.data.items || []) {
+    if (e.status === "cancelled") continue;
+    const jobId = e.extendedProperties?.private?.joineryflowJobId;
+    const startStr = e.start?.dateTime || e.start?.date;
+    if (!jobId || !startStr) continue;
+    const start = new Date(startStr);
+    const prev = out.get(jobId);
+    if (!prev || start < prev.start) out.set(jobId, { start, allDay: Boolean(e.start?.date) });
+  }
+  return out;
+}
+
 export async function deleteJobEvent(eventIds?: string | string[] | null): Promise<boolean> {
   const ids = (Array.isArray(eventIds) ? eventIds : [eventIds]).filter(Boolean) as string[];
   if (ids.length === 0) return false;
