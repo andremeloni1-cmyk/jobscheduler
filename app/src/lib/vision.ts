@@ -52,6 +52,12 @@ export async function extractJobsFromEmail(input: {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
+  // The model doesn't know today's date — without it, a bare date like "3 July"
+  // gets a wrong (usually past) year. Give it the current date in the business tz.
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: process.env.BUSINESS_TZ || "Australia/Sydney",
+  }); // YYYY-MM-DD
+
   const content: Anthropic.ContentBlockParam[] = input.images
     .map((img) => ({ ...img, media: mediaType(img.mimeType) }))
     .filter((img) => img.media)
@@ -71,6 +77,8 @@ export async function extractJobsFromEmail(input: {
   content.push({
     type: "text",
     text:
+      `Today's date is ${today}. When a date is written without a year (e.g. "3 July" or "12/8"), ` +
+      "resolve it to the SOONEST upcoming occurrence on or after today — never schedule a job in the past.\n\n" +
       "This is an email (with any attached job-sheet images) from a kitchen/joinery company. " +
       "Your task: identify only GENUINELY NEW jobs that need to be booked in / installed.\n\n" +
       "IMPORTANT — do NOT create jobs from, and return an EMPTY array for, emails that are: " +
