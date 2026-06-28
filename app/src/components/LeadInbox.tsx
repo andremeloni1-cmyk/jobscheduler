@@ -33,13 +33,14 @@ export function LeadInbox({
   }
 
   async function dismiss(job: JobDTO) {
-    if (!confirm(`Dismiss "${job.title}"? It will be removed from your leads.`)) return;
     setBusyId(job.id);
     try {
       await api(`/api/jobs/${job.id}`, { method: "DELETE" });
-      onChanged();
+    } catch {
+      /* ignore — reload reflects server state */
     } finally {
       setBusyId(null);
+      onChanged();
     }
   }
 
