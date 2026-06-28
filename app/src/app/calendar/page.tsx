@@ -26,8 +26,11 @@ function sameDay(a: Date, b: Date): boolean {
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+type ExternalEvent = { id: string; title: string; start: string; end: string; allDay: boolean };
+
 export default function CalendarPage() {
   const [jobs, setJobs] = useState<JobDTO[]>([]);
+  const [external, setExternal] = useState<ExternalEvent[]>([]);
   const [mode, setMode] = useState<"month" | "week">("month");
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -54,10 +57,44 @@ export default function CalendarPage() {
     load();
   }, []);
 
+  // Pull the owner's existing Google Calendar events for the visible range so
+  // prior commitments show up while scheduling.
+  useEffect(() => {
+    const rangeStart =
+      mode === "month" ? startOfWeek(startOfMonth(month)) : new Date(weekStart);
+    const rangeEnd = new Date(rangeStart.getTime() + (mode === "month" ? 42 : 7) * 86400000);
+    let active = true;
+    (async () => {
+      try {
+        const res = await api<{ connected: boolean; events: ExternalEvent[] }>(
+          `/api/calendar/events?start=${rangeStart.toISOString()}&end=${rangeEnd.toISOString()}`
+        );
+        if (active) setExternal(res.events || []);
+      } catch {
+        if (active) setExternal([]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [mode, month, weekStart]);
+
   function jobsForDay(day: Date) {
     return jobs
       .filter((j) => j.scheduledStart && sameDay(new Date(j.scheduledStart), day))
       .sort((a, b) => new Date(a.scheduledStart!).getTime() - new Date(b.scheduledStart!).getTime());
+  }
+
+  function externalForDay(day: Date) {
+    return external
+      .filter((e) => e.start && sameDay(new Date(e.start), day))
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+  }
+
+  function externalLabel(e: ExternalEvent): string {
+    if (e.allDay) return "All day";
+    const s = new Date(e.start).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+    return s;
   }
 
   async function moveJobToDay(job: JobDTO, day: Date) {
@@ -167,6 +204,7 @@ export default function CalendarPage() {
               const isToday = sameDay(day, today);
               const isSelected = sameDay(day, selectedDay);
               const dayJobs = jobsForDay(day);
+              const dayBusy = externalForDay(day);
               return (
                 <button
                   key={day.toISOString()}
@@ -193,6 +231,9 @@ export default function CalendarPage() {
                       />
                     ))}
                     {dayJobs.length > 3 && <span className="text-[9px] leading-none text-stone-400">+{dayJobs.length - 3}</span>}
+                    {dayBusy.length > 0 && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-stone-300" title={`${dayBusy.length} calendar event(s)`} />
+                    )}
                   </span>
                 </button>
               );
@@ -206,6 +247,8 @@ export default function CalendarPage() {
             </h2>
             <DayList
               jobs={jobsForDay(selectedDay)}
+              busy={externalForDay(selectedDay)}
+              busyLabel={externalLabel}
               onReschedule={setReschedule}
               draggable
               setDragId={setDragId}
@@ -231,6 +274,7 @@ export default function CalendarPage() {
           <div className="space-y-3">
             {days.map((day) => {
               const dayJobs = jobsForDay(day);
+              const dayBusy = externalForDay(day);
               const isToday = sameDay(day, today);
               return (
                 <div
@@ -248,7 +292,7 @@ export default function CalendarPage() {
                     </div>
                     {isToday && <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">Today</span>}
                   </div>
-                  {dayJobs.length === 0 ? (
+                  {dayJobs.length === 0 && dayBusy.length === 0 ? (
                     <p className="px-4 py-3 text-sm text-stone-300">No jobs</p>
                   ) : (
                     <ul className="divide-y divide-stone-100">
@@ -271,6 +315,13 @@ export default function CalendarPage() {
                           </button>
                         </li>
                       ))}
+                      {dayBusy.map((e) => (
+                        <li key={e.id} className="flex items-center gap-3 px-4 py-2.5">
+                          <div className="w-14 shrink-0 text-xs font-medium text-stone-400">{externalLabel(e)}</div>
+                          <span className="min-w-0 flex-1 truncate text-sm text-stone-400">{e.title}</span>
+                          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">Busy</span>
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>
@@ -289,16 +340,20 @@ export default function CalendarPage() {
 
 function DayList({
   jobs,
+  busy = [],
+  busyLabel,
   onReschedule,
   draggable,
   setDragId,
 }: {
   jobs: JobDTO[];
+  busy?: ExternalEvent[];
+  busyLabel?: (e: ExternalEvent) => string;
   onReschedule: (j: JobDTO) => void;
   draggable?: boolean;
   setDragId?: (id: string | null) => void;
 }) {
-  if (jobs.length === 0) {
+  if (jobs.length === 0 && busy.length === 0) {
     return <div className="card px-4 py-6 text-center text-sm text-stone-300">No jobs scheduled</div>;
   }
   return (
@@ -320,6 +375,13 @@ function DayList({
           <button onClick={() => onReschedule(job)} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100" aria-label="Reschedule">
             <ClockIcon />
           </button>
+        </div>
+      ))}
+      {busy.map((e) => (
+        <div key={e.id} className="flex items-center gap-3 px-4 py-2.5">
+          <div className="w-14 shrink-0 text-xs font-medium text-stone-400">{busyLabel ? busyLabel(e) : ""}</div>
+          <span className="min-w-0 flex-1 truncate text-sm text-stone-400">{e.title}</span>
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-400">Busy</span>
         </div>
       ))}
     </div>
