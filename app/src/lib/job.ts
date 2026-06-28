@@ -19,6 +19,7 @@ export interface JobDTO {
   googleEventId?: string | null;
   driveFolderId?: string | null;
   leadSource?: string | null;
+  gmailMessageId?: string | null;
   notes?: string | null;
   documents?: DocumentDTO[];
   reports?: ReportDTO[];

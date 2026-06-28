@@ -84,6 +84,21 @@ export default function JobDetailPage() {
     router.push("/");
   }
 
+  async function rereadImages() {
+    if (!job) return;
+    setBusy(true);
+    try {
+      const res = await api<{ ok: boolean; images?: number; message?: string }>(
+        `/api/jobs/${job.id}/reread-images`,
+        { method: "POST" }
+      );
+      flash(res.ok ? `Re-read ${res.images} image(s) — details updated` : res.message || "Couldn't re-read images");
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function syncPdfs() {
     if (!job) return;
     setBusy(true);
@@ -127,11 +142,25 @@ export default function JobDetailPage() {
         </div>
         <p className="mt-1 text-sm text-stone-500">{job.reference}</p>
         {job.leadSource && (
-          <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
-            </svg>
-            Imported from email · {job.leadSource}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" />
+              </svg>
+              Imported from email · {job.leadSource}
+            </span>
+            {job.gmailMessageId && (
+              <button
+                onClick={rereadImages}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-200 disabled:opacity-50"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Re-read images with AI
+              </button>
+            )}
           </div>
         )}
       </div>

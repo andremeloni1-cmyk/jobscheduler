@@ -128,6 +128,33 @@ export async function findJobPdfAttachments(query: {
   return results;
 }
 
+/** Re-downloads the image attachments from a single Gmail message by id. */
+export async function getMessageImages(messageId: string): Promise<FoundAttachment[]> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return [];
+  const gmail = google.gmail({ version: "v1", auth });
+  const full = await gmail.users.messages.get({ userId: "me", id: messageId, format: "full" });
+  const out: FoundAttachment[] = [];
+  for (const part of flattenParts(full.data.payload)) {
+    const name = (part.filename || "").toLowerCase();
+    if (part.filename && /\.(png|jpe?g|gif|webp)$/.test(name) && part.body?.attachmentId) {
+      const att = await gmail.users.messages.attachments.get({
+        userId: "me",
+        messageId,
+        id: part.body.attachmentId,
+      });
+      out.push({
+        messageId,
+        attachmentId: part.body.attachmentId,
+        filename: part.filename,
+        mimeType: part.mimeType || "image/png",
+        data: Buffer.from(att.data.data || "", "base64"),
+      });
+    }
+  }
+  return out;
+}
+
 export type LeadMessage = {
   messageId: string;
   threadId: string;
