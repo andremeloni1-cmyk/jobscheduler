@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Modal } from "./Modal";
-import { toLocalInput, fmtDay, fmtRange } from "@/lib/format";
+import { toLocalInput, fromLocalInput, fmtDay, fmtRange } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { WORKDAY_MINS, WORK_START_HOUR, WORK_START_MIN, jobEnd, workdaySegments, intervalsOverlap } from "@/lib/schedule";
 
@@ -71,13 +71,13 @@ export function RescheduleModal({
   // Clashes for the currently-chosen slot.
   const conflicts = useMemo(() => {
     if (!start) return [];
-    const segs = workdaySegments(new Date(start), dur);
+    const segs = workdaySegments(fromLocalInput(start), dur);
     return clashesAgainst(segs, busy);
   }, [start, dur, busy]);
 
   // First upcoming weekday whose work day fits the job with no clash.
   const suggestion = useMemo(() => {
-    const base = start ? new Date(start) : new Date();
+    const base = start ? fromLocalInput(start) : new Date();
     return nextFreeDay(base, dur, busy);
   }, [start, dur, busy]);
 
@@ -85,7 +85,7 @@ export function RescheduleModal({
     if (!job) return;
     setSaving(true);
     try {
-      const s = start ? new Date(start) : null;
+      const s = start ? fromLocalInput(start) : null;
       const e = s ? jobEnd(s, dur) : null;
       await api(`/api/jobs/${job.id}`, {
         method: "PATCH",
@@ -189,16 +189,17 @@ function clashesAgainst(segments: { start: Date; end: Date }[], busy: Busy[]): C
   return out;
 }
 
-/** Next weekday (within ~5 weeks) where the job fits at the work-day start with no clash. */
+/** Next weekday (within ~5 weeks) where the job fits at the work-day start with
+ * no clash. Works in UTC wall-clock to match how job times are stored. */
 function nextFreeDay(after: Date, durationMins: number, busy: Busy[]): Date | null {
   const cursor = new Date(after);
-  cursor.setHours(0, 0, 0, 0);
+  cursor.setUTCHours(0, 0, 0, 0);
   for (let i = 1; i <= 35; i++) {
-    cursor.setDate(cursor.getDate() + 1);
-    const day = cursor.getDay();
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    const day = cursor.getUTCDay();
     if (day === 0 || day === 6) continue; // weekends
     const slot = new Date(cursor);
-    slot.setHours(WORK_START_HOUR, WORK_START_MIN, 0, 0);
+    slot.setUTCHours(WORK_START_HOUR, WORK_START_MIN, 0, 0);
     const segs = workdaySegments(slot, durationMins);
     if (clashesAgainst(segs, busy).length === 0) return slot;
   }

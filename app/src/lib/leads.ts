@@ -244,13 +244,15 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
 function combineDateTime(date?: string, time?: string): Date | null {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   const t = time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : "06:30";
-  let d = new Date(`${date}T${t}:00`);
+  // Store the install time as a UTC wall-clock (06:30 -> 06:30Z) so it reads as
+  // 6:30am everywhere regardless of the server's timezone.
+  let d = new Date(`${date}T${t}:00Z`);
   if (isNaN(d.getTime())) return null;
 
   // More than a week in the past → almost certainly a wrong year. Bump it.
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   for (let guard = 0; d < weekAgo && guard < 5; guard++) {
-    d = new Date(d.getFullYear() + 1, d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), 0);
+    d = new Date(Date.UTC(d.getUTCFullYear() + 1, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), 0));
   }
   return d;
 }

@@ -25,10 +25,11 @@ async function calendarId(): Promise<string> {
 }
 
 /** Wall-clock "YYYY-MM-DDTHH:mm:ss" (no offset) so Google applies the business
- * timeZone, keeping 6:30am as 6:30am regardless of the server's timezone. */
+ * timeZone, keeping 6:30am as 6:30am. Job times are stored as a UTC wall-clock,
+ * so read UTC components — independent of the server's timezone. */
 function wallClock(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:00`;
 }
 
 function buildDescription(job: JobLike, docLinks: string[] = []): string {

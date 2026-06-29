@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
-import { toLocalInput } from "@/lib/format";
+import { toLocalInput, fromLocalInput } from "@/lib/format";
 import type { JobDTO } from "@/lib/job";
 
 export type JobFormValues = {
@@ -61,7 +61,7 @@ export function JobForm({
     setSaving(true);
     setError(null);
     try {
-      const start = v.scheduledStart ? new Date(v.scheduledStart) : null;
+      const start = v.scheduledStart ? fromLocalInput(v.scheduledStart) : null;
       const dur = parseInt(v.durationMins, 10) || 120;
       const end = start ? new Date(start.getTime() + dur * 60_000) : null;
       await onSubmit({
