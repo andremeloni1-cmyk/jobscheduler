@@ -10,6 +10,7 @@ import type { JobDTO } from "@/lib/job";
 export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -18,25 +19,58 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
     ? `https://drive.google.com/drive/folders/${job.drivePhotosFolderId}`
     : "";
 
-  async function upload(files: FileList | null) {
-    if (!files || files.length === 0) return;
+  // Upload in small sequential chunks rather than one big request. This keeps
+  // each request well under the server/nginx size limit (so a 30-photo job from
+  // a 24 MP phone goes through reliably), keeps server memory low, and lets us
+  // show progress. The chunks run one after another so the shared Drive photos
+  // folder is created exactly once (no race on the first batch).
+  const CHUNK_SIZE = 4;
+
+  async function upload(fileList: FileList | null) {
+    const images = Array.from(fileList || []).filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0) {
+      if (fileList && fileList.length) setMsg("Those files aren’t images — pick photos to upload.");
+      return;
+    }
+
     setBusy(true);
     setMsg(null);
+    setProgress({ done: 0, total: images.length });
+
+    let saved = 0;
+    let failed = 0;
+    let note: string | null = null; // a specific server message worth surfacing (e.g. "connect Google")
     try {
-      const form = new FormData();
-      Array.from(files).forEach((f) => form.append("files", f));
-      const res = await fetch(`/api/jobs/${job.id}/photos`, { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.ok === false) {
-        setMsg(data.message || "Couldn't upload photos just now.");
-      } else {
-        setMsg(`Uploaded ${data.saved} photo${data.saved === 1 ? "" : "s"} — saved to the client folder.`);
-        onChanged();
+      for (let i = 0; i < images.length; i += CHUNK_SIZE) {
+        const group = images.slice(i, i + CHUNK_SIZE);
+        const form = new FormData();
+        group.forEach((f) => form.append("files", f));
+        try {
+          const res = await fetch(`/api/jobs/${job.id}/photos`, { method: "POST", body: form });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.ok !== false) {
+            saved += data.saved || 0;
+          } else {
+            failed += group.length;
+            if (data.message) note = data.message;
+          }
+        } catch {
+          failed += group.length;
+        }
+        setProgress({ done: Math.min(i + CHUNK_SIZE, images.length), total: images.length });
       }
-    } catch {
-      setMsg("Couldn't upload photos just now.");
+
+      if (saved > 0) onChanged();
+      setMsg(
+        note && saved === 0
+          ? note
+          : failed > 0
+          ? `Uploaded ${saved} photo${saved === 1 ? "" : "s"}; ${failed} didn’t go through — try those again.`
+          : `Uploaded ${saved} photo${saved === 1 ? "" : "s"} — saved to the client folder.`
+      );
     } finally {
       setBusy(false);
+      setProgress(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -74,7 +108,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
           <circle cx="12" cy="13" r="3.5" />
           <path d="M8 6l1.5-2h5L16 6" strokeLinejoin="round" />
         </svg>
-        {busy ? "Uploading…" : "Upload / take photos"}
+        {busy ? (progress ? `Uploading ${progress.done}/${progress.total}…` : "Uploading…") : "Upload / take photos"}
       </button>
 
       {photos.length > 0 ? (

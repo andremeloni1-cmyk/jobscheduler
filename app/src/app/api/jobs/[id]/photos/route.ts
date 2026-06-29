@@ -7,7 +7,9 @@ import { logActivity } from "@/lib/automations";
 
 export const dynamic = "force-dynamic";
 
-const MAX_FILES = 25;
+// The client uploads in small chunks, but accept a generous per-request count
+// so a manual/bulk post still works without silently dropping photos.
+const MAX_FILES = 50;
 
 // Upload site photos straight from the dashboard into the job's shared
 // "Photos (client)" Drive folder, and record them as documents. Returns the
