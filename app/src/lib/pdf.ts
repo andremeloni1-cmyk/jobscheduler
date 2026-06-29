@@ -29,7 +29,7 @@ type Meta = {
   ownerName?: string | null;
 };
 
-const BRAND = rgb(0.63, 0.36, 0.15); // joinery timber tone
+const BRAND = rgb(0.051, 0.58, 0.533); // teal (#0d9488)
 const INK = rgb(0.12, 0.1, 0.09);
 const MUTED = rgb(0.4, 0.38, 0.36);
 
