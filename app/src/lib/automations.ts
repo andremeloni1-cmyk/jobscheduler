@@ -5,6 +5,7 @@ import { findJobPdfAttachments } from "@/lib/google/gmail";
 import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
 import { jobTemplateVars, resolveTemplate } from "@/lib/email-templates";
+import { quoteRef } from "@/lib/refs";
 import { isScheduledStatus } from "@/lib/types";
 import { jobEnd, businessTimeZone, WORK_START_HOUR, WORK_START_MIN } from "@/lib/schedule";
 import type { Job } from "@prisma/client";
@@ -118,10 +119,12 @@ export async function sendClientEmail(job: Job, key: "accepted" | "moved" | "can
  * record them as documents. Returns the number of new documents saved.
  */
 export async function syncJobPdfs(job: Job): Promise<number> {
+  const ref = quoteRef(job.title) || quoteRef(job.reference);
   const attachments = await findJobPdfAttachments({
     reference: job.reference,
     clientEmail: job.clientEmail,
     title: job.title,
+    ref,
   });
   let saved = 0;
   for (const att of attachments) {

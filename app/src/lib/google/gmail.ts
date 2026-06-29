@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { getAuthorizedClient } from "./oauth";
 import { prisma } from "@/lib/db";
+import { fileMatchesRef } from "@/lib/refs";
 
 const wrap76 = (s: string): string => s.replace(/(.{76})/g, "$1\r\n");
 const escapeHtml = (s: string): string =>
@@ -130,19 +131,21 @@ export async function findJobPdfAttachments(query: {
   reference: string;
   clientEmail?: string | null;
   title: string;
+  ref?: string | null; // job's quote/PO number (e.g. QU3279) — scopes the match
   maxMessages?: number;
 }): Promise<FoundAttachment[]> {
   const auth = await getAuthorizedClient();
   if (!auth) return [];
 
   const gmail = google.gmail({ version: "v1", auth });
-  // Match on the job title or the client's address — NOT on `query.reference`,
-  // which is an app-generated id (e.g. JOB-1042) that never appears in the
-  // client's own email, so it can only ever match nothing.
-  const terms: string[] = ['filename:pdf', 'has:attachment'];
-  const orTerms = [`"${query.title}"`];
-  if (query.clientEmail) orTerms.push(`from:${query.clientEmail}`);
-  const q = `${terms.join(" ")} (${orTerms.join(" OR ")})`;
+  // Scope strictly to the job's quote number when we have one, so we don't pull
+  // every PDF the same sender ever emailed (which lands other jobs' drawings/POs
+  // on this job). Without a quote number, fall back to the job title only —
+  // never a sender-wide match.
+  const ref = query.ref || null;
+  const q = ref
+    ? `filename:pdf has:attachment "${ref}"`
+    : `filename:pdf has:attachment "${query.title}"`;
 
   const list = await gmail.users.messages.list({
     userId: "me",
@@ -158,6 +161,8 @@ export async function findJobPdfAttachments(query: {
       if (
         part.filename &&
         part.filename.toLowerCase().endsWith(".pdf") &&
+        // When we have a quote number, only keep PDFs whose filename carries it.
+        (!ref || fileMatchesRef(part.filename, ref)) &&
         part.body?.attachmentId
       ) {
         const att = await gmail.users.messages.attachments.get({

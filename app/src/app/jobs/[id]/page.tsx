@@ -11,6 +11,7 @@ import { PhotoUpload } from "@/components/PhotoUpload";
 import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
+import { quoteRef, fileMatchesRef } from "@/lib/refs";
 
 const NEXT_ACTIONS: Record<string, { status: string; label: string; style: string }[]> = {
   lead: [{ status: "accepted", label: "Confirm job", style: "btn-primary" }],
@@ -31,6 +32,7 @@ export default function JobDetailPage() {
   const [rescheduling, setRescheduling] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAllDocs, setShowAllDocs] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -240,32 +242,53 @@ export default function JobDetailPage() {
         </div>
       )}
 
-      {/* Documents */}
-      <Section title="Documents" action={<button className="text-sm font-semibold text-brand-600" onClick={syncPdfs} disabled={busy}>Find in email</button>}>
-        {job.documents && job.documents.length > 0 ? (
-          <ul className="space-y-2">
-            {job.documents.map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-3">
-                <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
-                  <span>📄</span>
-                  <span className="truncate">{d.name}</span>
-                </span>
-                {d.webViewLink ? (
-                  <a href={d.webViewLink} target="_blank" rel="noreferrer" className="shrink-0 text-sm font-semibold text-brand-600">
-                    Open
-                  </a>
-                ) : (
-                  <span className="shrink-0 text-xs text-stone-400 dark:text-slate-500">{d.source}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-stone-400 dark:text-slate-500">
-            No documents yet. Tap “Find in email” to pull job PDFs from Gmail into Google Drive.
-          </p>
-        )}
-      </Section>
+      {/* Documents — by default show this job's own files (its quote number,
+          plus anything uploaded here). Older over-broad imports can be revealed
+          with "Show all". */}
+      {(() => {
+        const allDocs = job.documents || [];
+        const ref = quoteRef(job.title) || quoteRef(job.reference);
+        const relevant = ref
+          ? allDocs.filter((d) => d.source !== "gmail" || fileMatchesRef(d.name, ref))
+          : allDocs;
+        const shown = showAllDocs ? allDocs : relevant;
+        const hidden = allDocs.length - relevant.length;
+        return (
+          <Section title="Documents" action={<button className="text-sm font-semibold text-brand-600" onClick={syncPdfs} disabled={busy}>Find in email</button>}>
+            {shown.length > 0 ? (
+              <ul className="space-y-2">
+                {shown.map((d) => (
+                  <li key={d.id} className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
+                      <span>📄</span>
+                      <span className="truncate">{d.name}</span>
+                    </span>
+                    {d.webViewLink ? (
+                      <a href={d.webViewLink} target="_blank" rel="noreferrer" className="shrink-0 text-sm font-semibold text-brand-600">
+                        Open
+                      </a>
+                    ) : (
+                      <span className="shrink-0 text-xs text-stone-400 dark:text-slate-500">{d.source}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-stone-400 dark:text-slate-500">
+                No documents yet. Tap “Find in email” to pull job PDFs from Gmail into Google Drive.
+              </p>
+            )}
+            {hidden > 0 && (
+              <button
+                onClick={() => setShowAllDocs((s) => !s)}
+                className="mt-3 text-xs font-semibold text-stone-500 dark:text-slate-400"
+              >
+                {showAllDocs ? "Show only this job’s documents" : `Show all documents (+${hidden} from other jobs)`}
+              </button>
+            )}
+          </Section>
+        );
+      })()}
 
       {/* Maintenance report */}
       <Section
