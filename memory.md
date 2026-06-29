@@ -29,8 +29,60 @@ of each section). Keep it factual and concise.
   after a plain *Save draft* (so editing can continue).
 - Drive folders/files stay **private by default**; only explicitly client-facing
   things (the photos subfolder) are made shareable.
+- **Design system** (chosen via mockups): direction = "Clean & Crisp", accent =
+  **teal** (the single `brand` colour scale in `tailwind.config.ts`), neutrals =
+  cool **slate**; cool dark-mode surfaces are the **`night`** scale. **Dark mode**
+  follows the device by default with a Light/Dark/Auto toggle in Settings
+  (`lib/theme.ts`, `components/ThemeToggle.tsx`, inline no-flash script in
+  `layout.tsx`). Motion: bottom-sheet `Modal` glides + drag-to-dismiss, `.skeleton`
+  shimmer, `.stagger` list entrance, all respecting `prefers-reduced-motion`.
+- **Auto-deploy is ON**: a VPS cron (`deploy/auto-deploy.sh`, installed via
+  `deploy/setup-auto-deploy.sh`) checks `origin/master` **every minute** and runs
+  `update.sh` on new commits. So **merging to master = deploying to production**
+  within ~1 min. Owner verifies live; lean on this fast loop for visual/behaviour
+  checks I can't run in the sandbox.
+
+## Critical conventions — do NOT regress
+
+- **Job times are a fixed wall-clock stored in UTC** (6:30am == `06:30Z`). The app
+  is now **timezone-independent** — never use browser-local or server-local for
+  scheduled times. Always use UTC components (`getUTC*`/`setUTC*`/`Date.UTC`) and
+  format with `timeZone:"UTC"`. Helpers: `fromLocalInput`/`toLocalInput`
+  (`lib/format.ts`), `quoteRef` (`lib/refs.ts`). Google events: `wallClock` reads
+  UTC components + tags `businessTimeZone`. **Do NOT set the server's TZ to "fix"
+  scheduling** — that would re-break it (the app no longer depends on server TZ).
+- **Scheduling counts whole working days**: `workdaySegments` = `ceil(duration /
+  WORKDAY_MINS)` day-cells (6:30–15:00, weekends skipped). "1 day" must be exactly
+  one cell regardless of start time (don't reintroduce minute-spill).
+- **Documents belong to a job by its quote number** (e.g. `QU3279`), never by
+  sender. `findJobPdfAttachments` filters by `quoteRef`; the job page shows only
+  matching docs with a "Show all" toggle.
+- **Deletes are soft** (`Job.deletedAt`): hidden + restorable for 30 days. All
+  job-list queries must include `deletedAt: null` (jobs list, clients, lead
+  reconciliation). `?hard=1` = permanent.
 
 ## Change history
+
+### 2026-06-29 — later same day (all merged)
+- **#27** docs: added `CLAUDE.md` + `memory.md`.
+- **#28** fix: client Drive photo link opened "Request access" — ensure the shared
+  `Photos (client)` folder + auto-link it in the report on **Download and Email**;
+  surface a warning if the Google account blocks anyone-with-link sharing.
+- **#29** Next 16: renamed `middleware.ts` → `proxy.ts` (function `proxy`).
+- **#30** report editor pre-fills the Site-photos link with the job's uploaded
+  photos folder automatically.
+- **#31–#34** Visual overhaul: (1) teal accent, (2) dark mode + Light/Dark/Auto,
+  (3) crisp slate/hairline polish, (4) motion (sheets/skeleton/stagger).
+- **#35–#36** opt-in VPS cron auto-deploy, every minute.
+- **#37** fix: "New job" FAB ran off-screen — pinned inside the centred column.
+- **#38** fix: **scheduling timezone** (see Critical conventions). Server ran UTC
+  while app assumed Sydney → times showed 16:30 & reschedule hit the wrong day.
+  Now UTC wall-clock everywhere. Existing jobs corrected automatically.
+- **#39** fix: Documents pulled every PDF from the shared sender — now scoped by
+  the job's quote number (`lib/refs.ts`).
+- **#40** fix: day-count off-by-one ("1 day" booked 2) — whole-day segmentation.
+- **#41** feature: **soft-delete + Restore** (`Job.deletedAt`, Settings →
+  Recently deleted, 30-day purge).
 
 ### 2026-06-29 — PR #26 (merged): five web-app feature requests
 1. **Popups/lists not refreshing** — root cause was browser HTTP caching of GET
@@ -69,7 +121,14 @@ of each section). Keep it factual and concise.
 
 ## Open ideas / not done
 
+- **AI tuning** (requested, not built): add a self-serve "AI instructions" box in
+  Settings (global + per-builder) that feeds into the inbox-reader/report prompts,
+  and bake in the owner's real builder schedule emails as few-shot examples. AI
+  lives in `lib/vision.ts` (inbox→jobs, job images) and `lib/report-ai.ts` (report
+  draft); model via `ANTHROPIC_MODEL` (default `claude-opus-4-8`).
 - Optional: limited **parallel** photo uploads for speed (current default is
   sequential for reliability).
 - Optional: client-side downscaling as a toggle for users on slow connections
   (declined for now — quality preferred).
+- Existing **pre-soft-delete** deletions are unrecoverable except via the nightly
+  DB backup (`/root/backups/joineryflow-*.db`).
