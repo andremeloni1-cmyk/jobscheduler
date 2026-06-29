@@ -11,8 +11,10 @@ type RunJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; 
 
 const ON_SITE = ["accepted", "scheduled", "in_progress"];
 
-function sameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+// `seg` is a job time (UTC wall-clock); `localDay` is the viewer's clock. Match
+// the job's UTC date against the viewer's local date.
+function sameDay(seg: Date, localDay: Date): boolean {
+  return seg.getUTCFullYear() === localDay.getFullYear() && seg.getUTCMonth() === localDay.getMonth() && seg.getUTCDate() === localDay.getDate();
 }
 
 export default function TodayPage() {

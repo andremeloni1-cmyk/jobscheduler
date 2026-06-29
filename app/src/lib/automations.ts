@@ -208,8 +208,9 @@ export async function onReschedule(job: Job, notify = true): Promise<void> {
 // the event's business-tz date to the job's stored local date so server-vs-business
 // timezone differences don't cause false "moved" detections.
 function localYMD(d: Date): string {
+  // Job times are stored as a UTC wall-clock, so the job's "day" is its UTC date.
   const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
 }
 function tzParts(d: Date, tz: string): { y: number; m: number; d: number; h: number; min: number } {
   const f = new Intl.DateTimeFormat("en-GB", {
@@ -240,10 +241,11 @@ export async function syncFromCalendar(): Promise<{ updated: number }> {
     const jobDay = localYMD(new Date(job.scheduledStart));
     if (eventDay === jobDay) continue; // unchanged (or only a within-day time tweak)
 
-    // Rebuild the floating start from the event's business-tz wall clock.
+    // Rebuild the start from the event's business-tz wall clock, stored as a
+    // UTC wall-clock (the app's convention).
     const h = info.allDay ? WORK_START_HOUR : p.h;
     const min = info.allDay ? WORK_START_MIN : p.min;
-    const newStart = new Date(p.y, p.m - 1, p.d, h, min, 0);
+    const newStart = new Date(Date.UTC(p.y, p.m - 1, p.d, h, min, 0));
     const fresh = await prisma.job.update({
       where: { id: job.id },
       data: { scheduledStart: newStart, scheduledEnd: jobEnd(newStart, job.durationMins) },

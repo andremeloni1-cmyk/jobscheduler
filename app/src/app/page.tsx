@@ -87,8 +87,10 @@ export default function DashboardPage() {
 
   // How many confirmed jobs are on site today (for the run-sheet shortcut).
   const todayCount = useMemo(() => {
+    // Job times are a UTC wall-clock; compare their UTC date to the viewer's
+    // local "today" date.
     const t = new Date();
-    const same = (a: Date) => a.getFullYear() === t.getFullYear() && a.getMonth() === t.getMonth() && a.getDate() === t.getDate();
+    const same = (a: Date) => a.getUTCFullYear() === t.getFullYear() && a.getUTCMonth() === t.getMonth() && a.getUTCDate() === t.getDate();
     return jobs.filter((j) => {
       if (!j.scheduledStart || !["accepted", "scheduled", "in_progress"].includes(j.status)) return false;
       return workdaySegments(new Date(j.scheduledStart), j.durationMins || WORKDAY_MINS).some((s) => same(s.start));

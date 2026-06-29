@@ -14,20 +14,22 @@ import { companyPalette, companyLabel, companyKeyOf } from "@/lib/colors";
 // A job rendered on a particular day, carrying that day's working segment.
 type DayJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
 
+// The grid works in UTC-midnight dates to match how job times are stored (a
+// fixed wall-clock in UTC). `todayUTC` takes the viewer's local calendar date
+// and expresses it as UTC midnight, so "today" is still the user's real day.
+function todayUTC(): Date {
+  const n = new Date();
+  return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()));
+}
 function startOfWeek(d: Date): Date {
-  const date = new Date(d);
-  const day = (date.getDay() + 6) % 7; // Monday = 0
-  date.setDate(date.getDate() - day);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day));
 }
 function startOfMonth(d: Date): Date {
-  const date = new Date(d.getFullYear(), d.getMonth(), 1);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 function sameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate();
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -39,13 +41,9 @@ export default function CalendarPage() {
   const [external, setExternal] = useState<ExternalEvent[]>([]);
   const [calStatus, setCalStatus] = useState<{ connected: boolean; error?: string }>({ connected: false });
   const [mode, setMode] = useState<"month" | "week">("month");
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
-  const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
-  const [selectedDay, setSelectedDay] = useState<Date>(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  });
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(todayUTC()));
+  const [month, setMonth] = useState<Date>(() => startOfMonth(todayUTC()));
+  const [selectedDay, setSelectedDay] = useState<Date>(() => todayUTC());
   const [loading, setLoading] = useState(true);
   const [dragId, setDragId] = useState<string | null>(null);
   const [reschedule, setReschedule] = useState<JobDTO | null>(null);
@@ -140,7 +138,7 @@ export default function CalendarPage() {
     if (!job.scheduledStart) return;
     const old = new Date(job.scheduledStart);
     const next = new Date(day);
-    next.setHours(old.getHours(), old.getMinutes(), 0, 0);
+    next.setUTCHours(old.getUTCHours(), old.getUTCMinutes(), 0, 0);
     if (sameDay(old, next)) return;
     const end = jobEnd(next, job.durationMins || WORKDAY_MINS);
     setJobs((prev) =>
@@ -165,7 +163,7 @@ export default function CalendarPage() {
     if (job) await moveJobToDay(job, day);
   }
 
-  const today = new Date();
+  const today = todayUTC();
 
   // ----- Month grid (6 weeks x 7 days) -----
   const monthCells = useMemo(() => {
@@ -190,7 +188,7 @@ export default function CalendarPage() {
   }, [jobs]);
 
   function shiftMonth(delta: number) {
-    setMonth(new Date(month.getFullYear(), month.getMonth() + delta, 1));
+    setMonth(new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + delta, 1)));
   }
 
   return (
@@ -281,15 +279,13 @@ export default function CalendarPage() {
             <button className="btn-ghost px-2" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
             <div className="flex items-center gap-2">
               <span className="text-base font-bold text-stone-800 dark:text-slate-100">
-                {month.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
+                {month.toLocaleDateString("en-AU", { month: "long", year: "numeric", timeZone: "UTC" })}
               </span>
               <button
                 className="btn-secondary px-2.5 py-1 text-xs"
                 onClick={() => {
-                  setMonth(startOfMonth(new Date()));
-                  const t = new Date();
-                  t.setHours(0, 0, 0, 0);
-                  setSelectedDay(t);
+                  setMonth(startOfMonth(todayUTC()));
+                  setSelectedDay(todayUTC());
                 }}
               >
                 Today
@@ -308,7 +304,7 @@ export default function CalendarPage() {
           {/* Grid */}
           <div className="grid grid-cols-7 gap-1">
             {monthCells.map((day) => {
-              const inMonth = day.getMonth() === month.getMonth();
+              const inMonth = day.getUTCMonth() === month.getUTCMonth();
               const isToday = sameDay(day, today);
               const isSelected = sameDay(day, selectedDay);
               const dayJobs = jobsForDay(day);
@@ -328,7 +324,7 @@ export default function CalendarPage() {
                       isToday ? "bg-brand-600 font-bold text-white" : inMonth ? "text-stone-700 dark:text-slate-200" : "text-stone-300 dark:text-slate-600"
                     }`}
                   >
-                    {day.getDate()}
+                    {day.getUTCDate()}
                   </span>
                   <span className="mt-1 flex flex-wrap items-center justify-center gap-0.5">
                     {dayJobs.slice(0, 3).map((j) => (
@@ -351,7 +347,7 @@ export default function CalendarPage() {
           {/* Selected day's jobs */}
           <div className="mt-5">
             <h2 className="mb-2 text-sm font-bold text-stone-700 dark:text-slate-200">
-              {selectedDay.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+              {selectedDay.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}
             </h2>
             <DayList
               jobs={jobsForDay(selectedDay)}
@@ -370,8 +366,8 @@ export default function CalendarPage() {
           {/* Week nav */}
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-stone-500 dark:text-slate-400">
-              {weekStart.toLocaleDateString("en-AU", { day: "numeric", month: "short" })} –{" "}
-              {days[6].toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+              {weekStart.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" })} –{" "}
+              {days[6].toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}
             </p>
             <div className="flex items-center gap-1">
               <button className="btn-ghost px-2" onClick={() => setWeekStart(new Date(weekStart.getTime() - 7 * 86400000))} aria-label="Previous week">‹</button>
@@ -396,9 +392,9 @@ export default function CalendarPage() {
                   <div className={`flex items-center justify-between px-4 py-2.5 ${isToday ? "bg-brand-50 dark:bg-brand-500/15" : "bg-stone-50 dark:bg-night-850"}`}>
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-bold ${isToday ? "text-brand-700 dark:text-brand-300" : "text-stone-700 dark:text-slate-200"}`}>
-                        {day.toLocaleDateString("en-AU", { weekday: "long" })}
+                        {day.toLocaleDateString("en-AU", { weekday: "long", timeZone: "UTC" })}
                       </span>
-                      <span className="text-sm text-stone-400 dark:text-slate-500">{day.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}</span>
+                      <span className="text-sm text-stone-400 dark:text-slate-500">{day.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" })}</span>
                     </div>
                     {isToday && <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">Today</span>}
                   </div>
