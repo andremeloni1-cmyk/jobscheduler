@@ -77,7 +77,7 @@ the auto-deploy cron once:
 cd /root/jobscheduler/app && sudo bash deploy/setup-auto-deploy.sh
 ```
 
-It checks `origin/master` every 5 minutes and runs `update.sh` only when there
+It checks `origin/master` every minute and runs `update.sh` only when there
 are new commits. Watch what it does with `tail -f app/auto-deploy.log`. Turn it
 off again with `sudo bash deploy/setup-auto-deploy.sh --remove`. (CI gates every
 PR green before merge, so only built code reaches `master`.)

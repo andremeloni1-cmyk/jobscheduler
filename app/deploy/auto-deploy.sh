@@ -12,8 +12,8 @@ APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG="${AUTO_DEPLOY_LOG:-$APP_DIR/auto-deploy.log}"
 BRANCH="${DEPLOY_BRANCH:-master}"
 
-# Single-flight: skip if a deploy is already running (a build can outlast the
-# 5-minute cron interval).
+# Single-flight: skip if a deploy is already running (a build outlasts the
+# 1-minute cron interval, so later ticks must no-op until it finishes).
 exec 9>"/tmp/joineryflow-auto-deploy.lock"
 flock -n 9 || exit 0
 
