@@ -7,6 +7,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { Modal } from "@/components/Modal";
 import { JobForm } from "@/components/JobForm";
 import { ReportEditor } from "@/components/ReportEditor";
+import { PhotoUpload } from "@/components/PhotoUpload";
 import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
@@ -291,7 +292,12 @@ export default function JobDetailPage() {
         {!latestReport && !showReport && (
           <p className="text-sm text-stone-400">Fill out a maintenance report and email it to the client as a PDF.</p>
         )}
-        {showReport && <ReportEditor job={job} existing={latestReport} onSaved={load} />}
+        {showReport && <ReportEditor job={job} existing={latestReport} onSaved={load} onClose={() => setShowReport(false)} />}
+      </Section>
+
+      {/* Site photos */}
+      <Section title="Site photos">
+        <PhotoUpload job={job} onChanged={load} />
       </Section>
 
       {/* Activity */}

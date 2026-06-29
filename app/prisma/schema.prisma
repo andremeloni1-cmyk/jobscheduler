@@ -83,6 +83,7 @@ model Job {
   googleEventId  String?  // primary calendar event (first working day)
   googleEventIds String?  // JSON array of all calendar event ids (one per working day)
   driveFolderId  String?  // Drive folder for this job's PDFs
+  drivePhotosFolderId String? // shared "Photos (client)" subfolder (anyone-with-link)
 
   documents    Document[]
   reports      MaintenanceReport[]

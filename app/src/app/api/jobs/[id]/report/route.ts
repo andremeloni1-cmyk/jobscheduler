@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { json } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { generateReportPdf, type ReportData } from "@/lib/pdf";
-import { uploadToJobFolder } from "@/lib/google/drive";
+import { uploadToJobFolder, ensureJobPhotosFolder } from "@/lib/google/drive";
 import { sendEmail } from "@/lib/google/gmail";
 import { resolveTemplate, jobTemplateVars } from "@/lib/email-templates";
 import { logActivity } from "@/lib/automations";
@@ -83,11 +83,20 @@ export async function POST(req: Request, { params }: Params) {
         "report",
         jobTemplateVars(job, account?.name || "The Workshop")
       );
+      // Add a clickable "View site photos" button to the email. When the report
+      // links the job's own photos folder, make sure it's shared so the client
+      // can actually open it.
+      const links: { label: string; url: string }[] = [];
+      if (data.driveImagesLink) {
+        await ensureJobPhotosFolder(job).catch(() => {});
+        links.push({ label: "📷 View site photos", url: data.driveImagesLink });
+      }
       const sent = await sendEmail({
         to: job.clientEmail,
         subject: tpl?.subject || `Maintenance report — ${job.reference}`,
         body: tpl?.body || "Please find your maintenance report attached.",
         attachment: { filename, data: pdf, mimeType: "application/pdf" },
+        links,
       });
       await prisma.maintenanceReport.update({
         where: { id: report.id },
