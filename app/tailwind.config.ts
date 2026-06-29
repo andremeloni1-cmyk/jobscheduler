@@ -2,21 +2,24 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
+        // Accent: teal. The whole UI references this single `brand` scale, so
+        // this is the one place the accent colour is defined.
         brand: {
-          50: "#fbf6ef",
-          100: "#f3e6d3",
-          200: "#e6caa6",
-          300: "#d6a870",
-          400: "#c98c48",
-          500: "#b9742f",
-          600: "#a05c26",
-          700: "#814622",
-          800: "#6a3a22",
-          900: "#58311f",
-          950: "#31180f",
+          50: "#f0fdfa",
+          100: "#ccfbf1",
+          200: "#99f6e4",
+          300: "#5eead4",
+          400: "#2dd4bf",
+          500: "#14b8a6",
+          600: "#0d9488",
+          700: "#0f766e",
+          800: "#115e59",
+          900: "#134e4a",
+          950: "#042f2e",
         },
       },
       fontFamily: {

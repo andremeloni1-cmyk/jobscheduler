@@ -99,7 +99,7 @@ export async function sendEmail(opts: {
     ? `<div style="margin-top:16px">${links
         .map(
           (l) =>
-            `<a href="${escapeHtml(l.url)}" style="display:inline-block;margin:4px 8px 4px 0;padding:10px 16px;background:#a15c26;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">${escapeHtml(l.label)}</a>`
+            `<a href="${escapeHtml(l.url)}" style="display:inline-block;margin:4px 8px 4px 0;padding:10px 16px;background:#0d9488;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">${escapeHtml(l.label)}</a>`
         )
         .join("")}</div>`
     : "";
