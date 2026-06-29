@@ -75,7 +75,7 @@ export default function TodayPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
+            <div key={i} className="h-32 skeleton rounded-2xl" />
           ))}
         </div>
       ) : jobs.length === 0 ? (
