@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/job";
 import { NotificationsCard } from "@/components/NotificationsCard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
@@ -158,23 +159,32 @@ export default function SettingsPage() {
     return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => previewVars[k] ?? `{{${k}}}`);
   }
 
-  if (!data) return <div className="px-4 pt-6 text-stone-400">Loading…</div>;
+  if (!data) return <div className="px-4 pt-6 text-stone-400 dark:text-slate-500">Loading…</div>;
 
   return (
     <div className="px-4 pt-6">
-      <h1 className="mb-5 text-2xl font-bold tracking-tight text-stone-900">Settings</h1>
+      <h1 className="mb-5 text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Settings</h1>
 
-      {msg && <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700">{msg}</div>}
+      {msg && <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{msg}</div>}
+
+      {/* Appearance */}
+      <div className="card mb-4 flex items-center justify-between gap-3 p-4">
+        <div>
+          <h2 className="font-semibold text-stone-900 dark:text-slate-100">Appearance</h2>
+          <p className="text-sm text-stone-500 dark:text-slate-400">Light, dark, or follow your device.</p>
+        </div>
+        <ThemeToggle />
+      </div>
 
       {/* Google connection */}
       <div className="card mb-4 p-4">
-        <h2 className="mb-1 font-semibold text-stone-900">Google integration</h2>
-        <p className="mb-3 text-sm text-stone-500">
+        <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Google integration</h2>
+        <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">
           Connect your Google account to sync jobs to Calendar, save PDFs to Drive and send client emails from Gmail.
         </p>
 
         {!data.google.configured ? (
-          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
             Google isn’t configured on the server yet. Add <code>GOOGLE_CLIENT_ID</code> and{" "}
             <code>GOOGLE_CLIENT_SECRET</code> to your environment (see the README), then restart the app.
           </div>
@@ -182,7 +192,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              <span className="text-stone-700">Connected{data.account?.googleEmail ? ` as ${data.account.googleEmail}` : ""}</span>
+              <span className="text-stone-700 dark:text-slate-200">Connected{data.account?.googleEmail ? ` as ${data.account.googleEmail}` : ""}</span>
             </div>
             <button className="btn-secondary" onClick={disconnect}>
               Disconnect
@@ -194,7 +204,7 @@ export default function SettingsPage() {
           </a>
         )}
         {!data.google.connected && data.google.configured && (
-          <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-500">
+          <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-500 dark:bg-night-850 dark:text-slate-400">
             Until connected, the app runs in <strong>demo mode</strong>: everything works locally, but nothing is pushed to
             Google.
           </p>
@@ -207,8 +217,8 @@ export default function SettingsPage() {
       {/* Drive cleanup */}
       {data.google.connected && (
         <div className="card mb-4 p-4">
-          <h2 className="mb-1 font-semibold text-stone-900">Drive cleanup</h2>
-          <p className="mb-3 text-sm text-stone-500">Remove duplicate files already sitting in your job folders (keeps the newest copy of each).</p>
+          <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Drive cleanup</h2>
+          <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">Remove duplicate files already sitting in your job folders (keeps the newest copy of each).</p>
           <button className="btn-secondary w-full" onClick={dedupeDrive} disabled={deduping}>
             {deduping ? "Cleaning up…" : "Remove duplicate Drive files"}
           </button>
@@ -217,8 +227,8 @@ export default function SettingsPage() {
 
       {/* Incoming job sources */}
       <div className="card mb-4 p-4">
-        <h2 className="mb-1 font-semibold text-stone-900">Incoming jobs</h2>
-        <p className="mb-3 text-sm text-stone-500">
+        <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Incoming jobs</h2>
+        <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">
           Emails from these senders become job leads for you to approve. Add a whole{" "}
           <strong>company domain</strong> (e.g. <code>miikitchen.com.au</code>) to catch every staff member, or a
           specific email address. The app checks automatically, or tap “Check inbox for new jobs” on the Jobs screen.
@@ -227,7 +237,7 @@ export default function SettingsPage() {
         {/* AI status — needed to split multi-job emails and read images/PDFs */}
         <div
           className={`mb-3 rounded-xl px-4 py-2.5 text-sm ${
-            data.ai?.configured ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"
+            data.ai?.configured ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"
           }`}
         >
           {data.ai?.configured ? (
@@ -238,17 +248,17 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-2">
           {sources.map((s) => (
-            <div key={s.id} className="rounded-xl bg-stone-50 px-3 py-2.5">
+            <div key={s.id} className="rounded-xl bg-stone-50 px-3 py-2.5 dark:bg-night-850">
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-stone-800">{s.name}</p>
-                  <p className="truncate text-xs text-stone-500">{s.email}</p>
+                  <p className="truncate text-sm font-medium text-stone-800 dark:text-slate-100">{s.name}</p>
+                  <p className="truncate text-xs text-stone-500 dark:text-slate-400">{s.email}</p>
                 </div>
-                <label className="flex items-center gap-1.5 text-xs text-stone-500">
+                <label className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-slate-400">
                   <input type="checkbox" checked={s.enabled} onChange={() => toggleSource(s)} className="h-4 w-4 accent-brand-600" />
                   On
                 </label>
-                <button onClick={() => deleteSource(s)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-200" aria-label="Remove">
+                <button onClick={() => deleteSource(s)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-200 dark:text-slate-500 dark:hover:bg-night-800" aria-label="Remove">
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
                   </svg>
@@ -257,7 +267,7 @@ export default function SettingsPage() {
               <SourceTemplates source={s} />
             </div>
           ))}
-          {sources.length === 0 && <p className="text-sm text-stone-400">No senders yet — add one below.</p>}
+          {sources.length === 0 && <p className="text-sm text-stone-400 dark:text-slate-500">No senders yet — add one below.</p>}
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <input className="input" placeholder="Company name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} />
@@ -268,7 +278,7 @@ export default function SettingsPage() {
 
       {/* Account */}
       <div className="card mb-4 p-4">
-        <h2 className="mb-3 font-semibold text-stone-900">Your business</h2>
+        <h2 className="mb-3 font-semibold text-stone-900 dark:text-slate-100">Your business</h2>
         <label className="label">Name (used in emails & reports)</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meloni Joinery" />
         <label className="label mt-3">Email signature</label>
@@ -279,35 +289,35 @@ export default function SettingsPage() {
           onChange={(e) => setSignature(e.target.value)}
           placeholder={"Added to the bottom of every client email, e.g.\nMeloni Joinery\n0400 000 000"}
         />
-        <p className="mt-1 text-xs text-stone-400">Appended to all automated client emails. Save settings to apply.</p>
+        <p className="mt-1 text-xs text-stone-400 dark:text-slate-500">Appended to all automated client emails. Save settings to apply.</p>
 
         <label className="label mt-3">Email logo</label>
         {logo ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`data:${logoMime || "image/png"};base64,${logo}`} alt="Email logo" className="max-h-16 rounded bg-white p-1 ring-1 ring-stone-200" />
+            <img src={`data:${logoMime || "image/png"};base64,${logo}`} alt="Email logo" className="max-h-16 rounded bg-white p-1 ring-1 ring-stone-200 dark:bg-night-900 dark:ring-night-line" />
             <button className="btn-secondary" onClick={() => { setLogo(null); setLogoMime(null); }}>Remove</button>
           </div>
         ) : (
-          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={onLogoFile} className="block w-full text-sm text-stone-600" />
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={onLogoFile} className="block w-full text-sm text-stone-600 dark:text-slate-300" />
         )}
-        <p className="mt-1 text-xs text-stone-400">Shown under the signature in client emails. PNG/JPG under 300KB. Save settings to apply.</p>
+        <p className="mt-1 text-xs text-stone-400 dark:text-slate-500">Shown under the signature in client emails. PNG/JPG under 300KB. Save settings to apply.</p>
       </div>
 
       {/* Email templates */}
       <div className="card mb-4 p-4">
-        <h2 className="mb-1 font-semibold text-stone-900">Automated emails</h2>
-        <p className="mb-3 text-sm text-stone-500">
+        <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Automated emails</h2>
+        <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">
           Sent automatically to clients. Use placeholders like{" "}
           <code>{"{{clientName}}"}</code>, <code>{"{{jobTitle}}"}</code>, <code>{"{{startDate}}"}</code>,{" "}
           <code>{"{{startTime}}"}</code>, <code>{"{{address}}"}</code>, <code>{"{{reference}}"}</code>.
         </p>
         <div className="space-y-4">
           {templates.map((t) => (
-            <details key={t.key} className="rounded-xl border border-stone-200">
-              <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-semibold text-stone-800">
+            <details key={t.key} className="rounded-xl border border-stone-200 dark:border-night-line">
+              <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-semibold text-stone-800 dark:text-slate-100">
                 {TEMPLATE_LABELS[t.key] || t.key}
-                <label className="flex items-center gap-2 text-xs font-normal text-stone-500" onClick={(e) => e.stopPropagation()}>
+                <label className="flex items-center gap-2 text-xs font-normal text-stone-500 dark:text-slate-400" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={t.enabled}
@@ -331,10 +341,10 @@ export default function SettingsPage() {
                   onChange={(e) => updateTemplate(t.key, { body: e.target.value })}
                 />
                 {/* Live preview — placeholders filled with sample client details */}
-                <div className="rounded-xl bg-stone-50 p-3">
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-stone-400">Preview</p>
-                  <p className="text-sm font-semibold text-stone-800">{renderPreview(t.subject) || "(no subject)"}</p>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-stone-600">{renderPreview(t.body)}</p>
+                <div className="rounded-xl bg-stone-50 p-3 dark:bg-night-850">
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-stone-400 dark:text-slate-500">Preview</p>
+                  <p className="text-sm font-semibold text-stone-800 dark:text-slate-100">{renderPreview(t.subject) || "(no subject)"}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-stone-600 dark:text-slate-300">{renderPreview(t.body)}</p>
                 </div>
               </div>
             </details>
@@ -346,11 +356,11 @@ export default function SettingsPage() {
         {saving ? "Saving…" : "Save settings"}
       </button>
 
-      <button className="btn-ghost w-full text-stone-500" onClick={logout}>
+      <button className="btn-ghost w-full text-stone-500 dark:text-slate-400" onClick={logout}>
         Log out
       </button>
 
-      <p className="mt-6 text-center text-xs text-stone-300">JoineryFlow · v1.0</p>
+      <p className="mt-6 text-center text-xs text-stone-300 dark:text-slate-500">JoineryFlow · v1.0</p>
     </div>
   );
 }
@@ -389,15 +399,15 @@ function SourceTemplates({ source }: { source: LeadSource }) {
   }
 
   return (
-    <details className="mt-2 rounded-lg border border-stone-200 bg-white">
-      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-600">Custom emails for this client</summary>
+    <details className="mt-2 rounded-lg border border-stone-200 bg-white dark:border-night-line dark:bg-night-900">
+      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-stone-600 dark:text-slate-300">Custom emails for this client</summary>
       <div className="space-y-3 px-3 pb-3">
-        <p className="text-xs text-stone-400">
+        <p className="text-xs text-stone-400 dark:text-slate-500">
           Leave blank to use the defaults. Placeholders like <code>{"{{clientName}}"}</code> and <code>{"{{startDate}}"}</code> work here too.
         </p>
         {OVERRIDE_KEYS.map(({ key, label }) => (
           <div key={key}>
-            <p className="text-xs font-semibold text-stone-600">{label}</p>
+            <p className="text-xs font-semibold text-stone-600 dark:text-slate-300">{label}</p>
             <input
               className="input mt-1"
               placeholder="Subject (optional)"

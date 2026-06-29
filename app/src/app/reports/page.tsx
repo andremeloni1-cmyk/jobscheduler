@@ -78,8 +78,8 @@ export default function ReportsPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-1">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Job reports</h1>
-        <p className="text-sm text-stone-500">Tick off the work per room and email the client a completion report PDF.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Job reports</h1>
+        <p className="text-sm text-stone-500 dark:text-slate-400">Tick off the work per room and email the client a completion report PDF.</p>
       </header>
 
       <div className="mb-4 mt-4 grid grid-cols-3 gap-3">
@@ -94,7 +94,7 @@ export default function ReportsPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              tab === t.key ? "bg-brand-600 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200"
+              tab === t.key ? "bg-brand-600 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200 dark:bg-night-900 dark:text-slate-300 dark:ring-night-line"
             }`}
           >
             {t.label}
@@ -105,7 +105,7 @@ export default function ReportsPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-stone-100" />
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -119,8 +119,8 @@ export default function ReportsPage() {
                 <div className="card p-4 transition hover:shadow-md active:scale-[0.99]">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate font-semibold text-stone-900">{job.title}</h3>
-                      <p className="mt-0.5 truncate text-sm text-stone-500">
+                      <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">{job.title}</h3>
+                      <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-slate-400">
                         {job.clientName || "No client"} · {job.reference}
                       </p>
                     </div>
@@ -132,13 +132,13 @@ export default function ReportsPage() {
                       {(() => {
                         const pct = reportProgress(job);
                         return pct != null ? (
-                          <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600">
+                          <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600 dark:bg-night-800 dark:text-slate-300">
                             {pct}% done
                           </span>
                         ) : null;
                       })()}
                     </div>
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-stone-400 dark:text-slate-500">
                       {state === "sent" && latest?.sentAt
                         ? `Sent ${relativeTime(latest.sentAt)}`
                         : state === "draft" && latest
@@ -158,23 +158,23 @@ export default function ReportsPage() {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: "amber" | "sky" | "green" }) {
   const tones = {
-    amber: "text-amber-700",
-    sky: "text-sky-700",
-    green: "text-green-700",
+    amber: "text-amber-700 dark:text-amber-300",
+    sky: "text-sky-700 dark:text-sky-300",
+    green: "text-green-700 dark:text-green-300",
   };
   return (
     <div className="card px-3 py-3 text-center">
       <div className={`text-lg font-bold ${tones[tone]}`}>{value}</div>
-      <div className="text-xs text-stone-500">{label}</div>
+      <div className="text-xs text-stone-500 dark:text-slate-400">{label}</div>
     </div>
   );
 }
 
 function ReportBadge({ state }: { state: ReportState }) {
   const map = {
-    none: { label: "No report yet", cls: "bg-amber-50 text-amber-700 ring-amber-200" },
-    draft: { label: "Draft", cls: "bg-sky-50 text-sky-700 ring-sky-200" },
-    sent: { label: "Sent to client", cls: "bg-green-50 text-green-700 ring-green-200" },
+    none: { label: "No report yet", cls: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300" },
+    draft: { label: "Draft", cls: "bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-500/15 dark:text-sky-300" },
+    sent: { label: "Sent to client", cls: "bg-green-50 text-green-700 ring-green-200 dark:bg-green-500/15 dark:text-green-300" },
   }[state];
   return (
     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${map.cls}`}>

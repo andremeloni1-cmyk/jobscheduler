@@ -16,7 +16,7 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/90 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 dark:border-night-line bg-white/90 dark:bg-night-900/80 backdrop-blur">
       <div className="mx-auto grid max-w-2xl grid-cols-5">
         {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -25,7 +25,7 @@ export function BottomNav() {
               key={href}
               href={href}
               className={`flex flex-col items-center gap-1 py-3 text-xs font-medium transition ${
-                active ? "text-brand-600" : "text-stone-400"
+                active ? "text-brand-600" : "text-stone-400 dark:text-slate-500"
               }`}
             >
               <Icon className="h-6 w-6" />

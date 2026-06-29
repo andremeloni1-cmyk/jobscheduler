@@ -39,7 +39,7 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           autoFocus
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-300">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>

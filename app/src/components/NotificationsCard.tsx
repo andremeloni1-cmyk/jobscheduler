@@ -85,17 +85,17 @@ export function NotificationsCard() {
 
   return (
     <div className="card mb-4 p-4">
-      <h2 className="mb-1 font-semibold text-stone-900">Notifications</h2>
-      <p className="mb-3 text-sm text-stone-500">Get a push to this device when the inbox check finds new jobs to confirm or flags one for review.</p>
+      <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Notifications</h2>
+      <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">Get a push to this device when the inbox check finds new jobs to confirm or flags one for review.</p>
 
-      {state === "loading" && <p className="text-sm text-stone-400">Checking…</p>}
-      {state === "unsupported" && <p className="text-sm text-stone-500">This device/browser doesn’t support push notifications. On iPhone, add the app to your home screen first.</p>}
+      {state === "loading" && <p className="text-sm text-stone-400 dark:text-slate-500">Checking…</p>}
+      {state === "unsupported" && <p className="text-sm text-stone-500 dark:text-slate-400">This device/browser doesn’t support push notifications. On iPhone, add the app to your home screen first.</p>}
       {state === "unconfigured" && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
           Push isn’t set up on the server yet. Generate a key pair with <code>npx web-push generate-vapid-keys</code> and set <code>VAPID_PUBLIC_KEY</code> / <code>VAPID_PRIVATE_KEY</code> in <code>.env</code>, then reload.
         </p>
       )}
-      {state === "denied" && <p className="text-sm text-red-600">Notifications are blocked in your browser settings for this site — allow them there, then reload.</p>}
+      {state === "denied" && <p className="text-sm text-red-600 dark:text-red-300">Notifications are blocked in your browser settings for this site — allow them there, then reload.</p>}
       {state === "off" && (
         <button className="btn-primary w-full" onClick={enable} disabled={busy}>
           {busy ? "Enabling…" : "Enable notifications on this device"}
@@ -103,13 +103,13 @@ export function NotificationsCard() {
       )}
       {state === "on" && (
         <div className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm text-stone-700">
+          <span className="flex items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
             <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Enabled on this device
           </span>
           <button className="btn-secondary" onClick={disable} disabled={busy}>Turn off</button>
         </div>
       )}
-      {msg && <p className="mt-2 text-sm text-stone-600">{msg}</p>}
+      {msg && <p className="mt-2 text-sm text-stone-600 dark:text-slate-300">{msg}</p>}
     </div>
   );
 }

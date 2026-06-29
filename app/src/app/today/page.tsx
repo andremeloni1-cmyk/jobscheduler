@@ -65,8 +65,8 @@ export default function TodayPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Today</h1>
-        <p className="text-sm text-stone-500">
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Today</h1>
+        <p className="text-sm text-stone-500 dark:text-slate-400">
           {today.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })} ·{" "}
           {jobs.length} job{jobs.length === 1 ? "" : "s"}
         </p>
@@ -75,14 +75,14 @@ export default function TodayPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-stone-100" />
+            <div key={i} className="h-32 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
           ))}
         </div>
       ) : jobs.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
           <span className="text-3xl">🎉</span>
-          <p className="font-semibold text-stone-800">Nothing on today</p>
-          <p className="text-sm text-stone-500">Confirmed jobs scheduled for today show up here.</p>
+          <p className="font-semibold text-stone-800 dark:text-slate-100">Nothing on today</p>
+          <p className="text-sm text-stone-500 dark:text-slate-400">Confirmed jobs scheduled for today show up here.</p>
           <Link href="/calendar" className="btn-secondary mt-2">Open calendar</Link>
         </div>
       ) : (
@@ -91,26 +91,26 @@ export default function TodayPage() {
             <div key={job.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-brand-600">{fmtRange(job._segStart, job._segEnd)}</p>
+                  <p className="text-xs font-bold text-brand-600 dark:text-brand-300">{fmtRange(job._segStart, job._segEnd)}</p>
                   <Link href={`/jobs/${job.id}`}>
-                    <h3 className="truncate font-semibold text-stone-900">
+                    <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">
                       {job.title}
                       {job._dayCount > 1 && (
-                        <span className="ml-1.5 text-xs font-normal text-stone-400">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+                        <span className="ml-1.5 text-xs font-normal text-stone-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
                       )}
                     </h3>
                   </Link>
-                  <p className="truncate text-sm text-stone-500">{job.clientName || "—"}</p>
+                  <p className="truncate text-sm text-stone-500 dark:text-slate-400">{job.clientName || "—"}</p>
                 </div>
                 <StatusPill status={job.status} />
               </div>
 
-              {job.address && <p className="mt-2 text-sm text-stone-600">📍 {job.address}</p>}
+              {job.address && <p className="mt-2 text-sm text-stone-600 dark:text-slate-300">📍 {job.address}</p>}
 
               {/* Quick contact / nav / docs */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {job.clientPhone && (
-                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700">
+                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200">
                     📞 Call
                   </a>
                 )}
@@ -119,7 +119,7 @@ export default function TodayPage() {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200"
                   >
                     🧭 Navigate
                   </a>
@@ -127,7 +127,7 @@ export default function TodayPage() {
                 {(job.documents || [])
                   .filter((d) => d.webViewLink)
                   .map((d) => (
-                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700">
+                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200">
                       📎 {d.name}
                     </a>
                   ))}
@@ -140,7 +140,7 @@ export default function TodayPage() {
                     {busyId === job.id ? "…" : "Start"}
                   </button>
                 ) : (
-                  <span className="flex-1 rounded-xl bg-amber-50 py-2 text-center text-sm font-semibold text-amber-700">In progress</span>
+                  <span className="flex-1 rounded-xl bg-amber-50 py-2 text-center text-sm font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">In progress</span>
                 )}
                 <button className="btn-primary flex-1 py-2" disabled={busyId === job.id} onClick={() => setStatus(job, "completed")}>
                   {busyId === job.id ? "…" : "Complete"}

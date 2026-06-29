@@ -21,6 +21,16 @@ const config: Config = {
           900: "#134e4a",
           950: "#042f2e",
         },
+        // Dark-mode neutral surfaces (used via dark: variants). Cool slate to
+        // match the "Crisp Modern" direction.
+        night: {
+          950: "#0b0f17", // page background
+          900: "#121826", // card surface
+          850: "#161d2c", // elevated surface (inputs, raised tiles)
+          800: "#1b2433", // tag / chip background
+          line: "#222b3a", // hairline border / ring
+          line2: "#1c2433", // subtle divider
+        },
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
