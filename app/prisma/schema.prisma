@@ -90,6 +90,7 @@ model Job {
   activities   Activity[]
 
   notes        String?
+  deletedAt    DateTime? // soft delete — hidden from lists, restorable for 30 days
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -24,6 +24,7 @@ export interface JobDTO {
   gmailMessageId?: string | null;
   flag?: string | null;
   notes?: string | null;
+  deletedAt?: string | null;
   createdAt?: string;
   documents?: DocumentDTO[];
   reports?: ReportDTO[];

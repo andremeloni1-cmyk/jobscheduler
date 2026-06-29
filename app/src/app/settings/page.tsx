@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/job";
 import { NotificationsCard } from "@/components/NotificationsCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
@@ -175,6 +176,8 @@ export default function SettingsPage() {
         </div>
         <ThemeToggle />
       </div>
+
+      <RecentlyDeleted />
 
       {/* Google connection */}
       <div className="card mb-4 p-4">
