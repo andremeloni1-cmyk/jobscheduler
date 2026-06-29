@@ -22,7 +22,7 @@ async function validCookie(value: string | undefined, secret: string): Promise<b
   return expected === sig;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const password = process.env.APP_PASSWORD;
   // No password configured → no login gate.
   if (!password) return NextResponse.next();
