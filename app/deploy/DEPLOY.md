@@ -68,6 +68,20 @@ cd /root/jobscheduler/app && sudo bash deploy/update.sh
 
 Pulls the latest code, migrates, rebuilds and reloads with zero config changes.
 
+### Auto-deploy on merge (optional)
+
+To ship automatically whenever changes land on `master` (no manual step), install
+the auto-deploy cron once:
+
+```bash
+cd /root/jobscheduler/app && sudo bash deploy/setup-auto-deploy.sh
+```
+
+It checks `origin/master` every 5 minutes and runs `update.sh` only when there
+are new commits. Watch what it does with `tail -f app/auto-deploy.log`. Turn it
+off again with `sudo bash deploy/setup-auto-deploy.sh --remove`. (CI gates every
+PR green before merge, so only built code reaches `master`.)
+
 ## Operations cheat-sheet
 
 | Task | Command |
