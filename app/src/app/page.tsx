@@ -28,7 +28,7 @@ export default function DashboardPage() {
       const { jobs } = await api<{ jobs: JobDTO[] }>("/api/jobs");
       setJobs(jobs);
     } catch {
-      /* unauthenticated handled by middleware redirect */
+      /* unauthenticated handled by proxy redirect */
     } finally {
       setLoading(false);
     }
