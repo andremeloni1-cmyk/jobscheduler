@@ -18,6 +18,8 @@ export interface JobDTO {
   clientPhone?: string | null;
   googleEventId?: string | null;
   driveFolderId?: string | null;
+  drivePhotosFolderId?: string | null;
+  photosLink?: string | null; // shareable client link to the job's photos folder
   leadSource?: string | null;
   gmailMessageId?: string | null;
   flag?: string | null;
@@ -34,6 +36,7 @@ export interface DocumentDTO {
   name: string;
   webViewLink?: string | null;
   source: string;
+  mimeType?: string;
   createdAt: string;
 }
 
@@ -56,6 +59,10 @@ export interface ActivityDTO {
 
 export async function api<T = any>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
+    // Never serve API reads from the browser HTTP cache — otherwise the jobs
+    // list / inbox can show stale state after a mutation (a confirmed lead or
+    // saved job appearing not to "go away" until a hard refresh).
+    cache: "no-store",
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers || {}) },
   });

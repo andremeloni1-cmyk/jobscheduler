@@ -4,6 +4,7 @@ import { getAuthorizedClient } from "./oauth";
 import { prisma } from "@/lib/db";
 
 const ROOT_FOLDER_NAME = "JoineryFlow Jobs";
+const PHOTOS_FOLDER_NAME = "Photos (client)";
 
 /** Finds (or creates) the root Drive folder where all job folders live. */
 async function ensureRootFolder(auth: any): Promise<string> {
@@ -67,6 +68,99 @@ export type UploadedFile = {
   webViewLink: string;
   mimeType: string;
 };
+
+/** Makes a Drive file/folder viewable by anyone with the link. Idempotent. */
+async function shareAnyoneWithLink(drive: any, fileId: string): Promise<void> {
+  const perms = await drive.permissions
+    .list({ fileId, fields: "permissions(id,type)" })
+    .catch(() => null);
+  if (perms?.data.permissions?.some((p: any) => p.type === "anyone")) return;
+  await drive.permissions
+    .create({ fileId, requestBody: { role: "reader", type: "anyone" } })
+    .catch(() => {});
+}
+
+/**
+ * Feature: client photo sharing. Ensures a "Photos (client)" subfolder exists
+ * inside a job's Drive folder and is viewable by anyone with the link, so the
+ * link can be sent to the client without exposing the job's private PDFs/plans.
+ * Returns the folder id + shareable link, or null in demo mode.
+ */
+export async function ensureJobPhotosFolder(job: {
+  id: string;
+  reference: string;
+  title: string;
+  driveFolderId?: string | null;
+  drivePhotosFolderId?: string | null;
+}): Promise<{ folderId: string; link: string } | null> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return null;
+  const drive = google.drive({ version: "v3", auth });
+
+  let photosId = job.drivePhotosFolderId || null;
+  if (!photosId) {
+    const parent = await ensureJobFolder(job);
+    if (!parent) return null;
+    // Reuse an existing Photos subfolder if one is already there.
+    const found = await drive.files
+      .list({
+        q: `name='${PHOTOS_FOLDER_NAME}' and '${parent}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+        fields: "files(id)",
+        spaces: "drive",
+      })
+      .catch(() => null);
+    photosId = found?.data.files?.[0]?.id || null;
+    if (!photosId) {
+      const created = await drive.files.create({
+        requestBody: {
+          name: PHOTOS_FOLDER_NAME,
+          mimeType: "application/vnd.google-apps.folder",
+          parents: [parent],
+        },
+        fields: "id",
+      });
+      photosId = created.data.id!;
+    }
+    await prisma.job.update({ where: { id: job.id }, data: { drivePhotosFolderId: photosId } });
+  }
+
+  await shareAnyoneWithLink(drive, photosId);
+  return { folderId: photosId, link: `https://drive.google.com/drive/folders/${photosId}` };
+}
+
+/** Uploads image buffers into a job's shared "Photos (client)" folder. */
+export async function uploadPhotosToJobFolder(
+  job: {
+    id: string;
+    reference: string;
+    title: string;
+    driveFolderId?: string | null;
+    drivePhotosFolderId?: string | null;
+  },
+  files: { name: string; data: Buffer; mimeType: string }[]
+): Promise<{ uploaded: UploadedFile[]; folderLink: string } | null> {
+  const auth = await getAuthorizedClient();
+  if (!auth) return null;
+  const ph = await ensureJobPhotosFolder(job);
+  if (!ph) return null;
+
+  const drive = google.drive({ version: "v3", auth });
+  const uploaded: UploadedFile[] = [];
+  for (const f of files) {
+    const created = await drive.files.create({
+      requestBody: { name: f.name, parents: [ph.folderId] },
+      media: { mimeType: f.mimeType, body: Readable.from(f.data) },
+      fields: "id, name, webViewLink, mimeType",
+    });
+    uploaded.push({
+      fileId: created.data.id!,
+      name: created.data.name || f.name,
+      webViewLink: created.data.webViewLink || `https://drive.google.com/file/d/${created.data.id}/view`,
+      mimeType: created.data.mimeType || f.mimeType,
+    });
+  }
+  return { uploaded, folderLink: ph.link };
+}
 
 /** Uploads a buffer into a job's Drive folder and returns shareable metadata. */
 export async function uploadToJobFolder(

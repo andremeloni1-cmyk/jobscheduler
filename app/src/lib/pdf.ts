@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFName, PDFString, StandardFonts, rgb } from "pdf-lib";
 
 export type ChecklistItem = { label: string; done: boolean };
 export type RoomEntry = { name: string; work?: string; items?: ChecklistItem[] };
@@ -63,6 +63,33 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
       font: opts.font ?? font,
       color: opts.color ?? INK,
     });
+  };
+
+  // Draws a single line of blue, underlined, clickable link text and advances y.
+  const link = (label: string, url: string, size = 11, lh = 18) => {
+    ensureSpace(lh);
+    const LINK = rgb(0.13, 0.39, 0.78);
+    const w = font.widthOfTextAtSize(label, size);
+    page.drawText(label, { x: margin, y, size, font, color: LINK });
+    page.drawLine({
+      start: { x: margin, y: y - 1.5 },
+      end: { x: margin + w, y: y - 1.5 },
+      thickness: 0.6,
+      color: LINK,
+    });
+    // Clickable hit-area annotation over the text.
+    const annot = pdf.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [margin, y - 3, margin + w, y + size],
+      Border: [0, 0, 0],
+      A: { Type: "Action", S: "URI", URI: PDFString.of(url) },
+    });
+    const ref = pdf.context.register(annot);
+    const existing = page.node.Annots();
+    if (existing) existing.push(ref);
+    else page.node.set(PDFName.of("Annots"), pdf.context.obj([ref]));
+    y -= lh;
   };
 
   // Wrap long text into lines and draw them, advancing y.
@@ -184,7 +211,13 @@ export async function generateReportPdf(meta: Meta, data: ReportData): Promise<B
   section("Findings", data.findings);
   section("Materials used", data.materialsUsed);
   section("Recommendations", data.recommendations);
-  if (data.driveImagesLink) section("Site photos", data.driveImagesLink);
+  if (data.driveImagesLink) {
+    ensureSpace(40);
+    page.drawText("Site photos", { x: margin, y, size: 12, font: bold, color: BRAND });
+    y -= 18;
+    link("View site photos on Google Drive", data.driveImagesLink);
+    y -= 10;
+  }
 
   // Condition + next service summary box
   ensureSpace(72);

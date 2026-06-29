@@ -22,10 +22,12 @@ export function ReportEditor({
   job,
   existing,
   onSaved,
+  onClose,
 }: {
   job: JobDTO;
   existing?: ReportDTO | null;
   onSaved: () => void;
+  onClose?: () => void;
 }) {
   const [data, setData] = useState<ReportData>(() => {
     try {
@@ -113,6 +115,12 @@ export function ReportEditor({
           : "Draft saved."
       );
       onSaved();
+      // Collapse back to the saved summary after generating/emailing so the
+      // editor doesn't stay open over the job. A plain draft-save keeps it open
+      // so you can carry on editing.
+      if ((action === "generate" || action === "send") && onClose) {
+        setTimeout(onClose, 1200);
+      }
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -120,7 +128,13 @@ export function ReportEditor({
     }
   }
 
-  const driveFolderLink = job.driveFolderId ? `https://drive.google.com/drive/folders/${job.driveFolderId}` : "";
+  // Prefer the shared "Photos (client)" folder (safe to send to a client) over
+  // the main job folder, which also holds private plans/POs.
+  const photosFolderLink = job.drivePhotosFolderId
+    ? `https://drive.google.com/drive/folders/${job.drivePhotosFolderId}`
+    : job.driveFolderId
+    ? `https://drive.google.com/drive/folders/${job.driveFolderId}`
+    : "";
 
   return (
     <div className="space-y-4">
@@ -247,13 +261,13 @@ export function ReportEditor({
           onChange={set("driveImagesLink")}
           placeholder="Paste a Google Drive folder link"
         />
-        {driveFolderLink && data.driveImagesLink !== driveFolderLink && (
+        {photosFolderLink && data.driveImagesLink !== photosFolderLink && (
           <button
             type="button"
-            onClick={() => setData((p) => ({ ...p, driveImagesLink: driveFolderLink }))}
+            onClick={() => setData((p) => ({ ...p, driveImagesLink: photosFolderLink }))}
             className="mt-1 text-xs font-semibold text-brand-600"
           >
-            Use this job’s Drive folder
+            {job.drivePhotosFolderId ? "Use this job’s photos folder" : "Use this job’s Drive folder"}
           </button>
         )}
       </div>

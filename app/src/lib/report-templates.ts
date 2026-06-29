@@ -2,7 +2,7 @@
 // and server. Applying a template adds a room with these items (all unticked).
 import type { RoomEntry } from "@/lib/pdf";
 
-export type TemplateKey = "kitchen" | "bathroom" | "laundry" | "wardrobe";
+export type TemplateKey = "kitchen" | "bathroom" | "laundry" | "wardrobe" | "returnVisit";
 
 export const REPORT_TEMPLATES: { key: TemplateKey; label: string; room: string; items: string[] }[] = [
   {
@@ -60,6 +60,22 @@ export const REPORT_TEMPLATES: { key: TemplateKey; label: string; room: string; 
       "Drawers fitted & running",
       "Doors / tracks adjusted",
       "Mirrors fitted",
+      "Site cleaned & rubbish removed",
+    ],
+  },
+  {
+    key: "returnVisit",
+    label: "Return visit / maintenance",
+    room: "Return visit",
+    items: [
+      "Doors & drawers re-adjusted",
+      "Hinges & runners checked / tightened",
+      "Handles & hardware re-secured",
+      "Silicone & sealing touched up",
+      "Benchtop joins inspected",
+      "Finish / paintwork touch-ups",
+      "Appliances re-tested",
+      "Client snag list addressed",
       "Site cleaned & rubbish removed",
     ],
   },
