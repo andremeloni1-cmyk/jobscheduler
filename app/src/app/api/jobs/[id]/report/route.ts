@@ -36,6 +36,34 @@ export async function POST(req: Request, { params }: Params) {
   // Action: generate the PDF and (optionally) email it to the client.
   if (body.action === "generate" || body.action === "send") {
     const account = await prisma.account.findFirst();
+
+    // Make sure the report's "Site photos" link points at a folder the client
+    // can actually open. We only ever share the dedicated "Photos (client)"
+    // subfolder (the main job folder stays private), so: ensure it exists + is
+    // shared, and use its link when the report has no link or still points at
+    // the private main job folder. This runs for Download too, not just Email.
+    const photos = await ensureJobPhotosFolder(job).catch(() => null);
+    const mainFolderLink = job.driveFolderId
+      ? `https://drive.google.com/drive/folders/${job.driveFolderId}`
+      : "";
+    if (photos) {
+      if (!data.driveImagesLink || data.driveImagesLink === mainFolderLink) {
+        data.driveImagesLink = photos.link;
+      }
+      // Persist the corrected link onto the saved report.
+      await prisma.maintenanceReport.update({
+        where: { id: report.id },
+        data: { data: JSON.stringify(data) },
+      });
+      if (!photos.shared) {
+        await logActivity(
+          job.id,
+          "drive",
+          "Photos folder could not be made public — your Google account may block 'anyone with link' sharing. Clients won't be able to open the link."
+        );
+      }
+    }
+
     const pdf = await generateReportPdf(
       {
         jobTitle: job.title,
@@ -83,12 +111,10 @@ export async function POST(req: Request, { params }: Params) {
         "report",
         jobTemplateVars(job, account?.name || "The Workshop")
       );
-      // Add a clickable "View site photos" button to the email. When the report
-      // links the job's own photos folder, make sure it's shared so the client
-      // can actually open it.
+      // Add a clickable "View site photos" button to the email. The folder was
+      // already ensured + shared above, so this link opens for the client.
       const links: { label: string; url: string }[] = [];
       if (data.driveImagesLink) {
-        await ensureJobPhotosFolder(job).catch(() => {});
         links.push({ label: "📷 View site photos", url: data.driveImagesLink });
       }
       const sent = await sendEmail({

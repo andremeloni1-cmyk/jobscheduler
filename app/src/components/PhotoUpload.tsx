@@ -40,6 +40,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
     let saved = 0;
     let failed = 0;
     let note: string | null = null; // a specific server message worth surfacing (e.g. "connect Google")
+    let shareBlocked = false; // Google account refused anyone-with-link sharing
     try {
       for (let i = 0; i < images.length; i += CHUNK_SIZE) {
         const group = images.slice(i, i + CHUNK_SIZE);
@@ -50,6 +51,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
           const data = await res.json().catch(() => ({}));
           if (res.ok && data.ok !== false) {
             saved += data.saved || 0;
+            if (data.shared === false) shareBlocked = true;
           } else {
             failed += group.length;
             if (data.message) note = data.message;
@@ -61,12 +63,15 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
       }
 
       if (saved > 0) onChanged();
+      const warn = shareBlocked
+        ? " ⚠️ Your Google account blocked the public link, so clients can’t open it yet — see the note below."
+        : "";
       setMsg(
         note && saved === 0
           ? note
           : failed > 0
-          ? `Uploaded ${saved} photo${saved === 1 ? "" : "s"}; ${failed} didn’t go through — try those again.`
-          : `Uploaded ${saved} photo${saved === 1 ? "" : "s"} — saved to the client folder.`
+          ? `Uploaded ${saved} photo${saved === 1 ? "" : "s"}; ${failed} didn’t go through — try those again.${warn}`
+          : `Uploaded ${saved} photo${saved === 1 ? "" : "s"} — saved to the client folder.${warn}`
       );
     } finally {
       setBusy(false);

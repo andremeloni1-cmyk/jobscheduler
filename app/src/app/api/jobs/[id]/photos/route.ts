@@ -56,6 +56,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
   await logActivity(job.id, "drive", `Uploaded ${res.uploaded.length} photo(s) to the client photos folder`);
+  if (!res.shared) {
+    await logActivity(
+      job.id,
+      "drive",
+      "Photos folder could not be made public — your Google account may block 'anyone with link' sharing. Clients won't be able to open the link."
+    );
+  }
 
-  return json({ ok: true, connected: true, saved: res.uploaded.length, folderLink: res.folderLink });
+  return json({ ok: true, connected: true, saved: res.uploaded.length, folderLink: res.folderLink, shared: res.shared });
 }

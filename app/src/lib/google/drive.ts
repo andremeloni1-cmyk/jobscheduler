@@ -69,15 +69,21 @@ export type UploadedFile = {
   mimeType: string;
 };
 
-/** Makes a Drive file/folder viewable by anyone with the link. Idempotent. */
-async function shareAnyoneWithLink(drive: any, fileId: string): Promise<void> {
+/**
+ * Makes a Drive file/folder viewable by anyone with the link. Idempotent.
+ * Returns true if the file is (now) publicly viewable, false if sharing failed —
+ * e.g. a Google Workspace policy that forbids anyone-with-link sharing, in which
+ * case the caller should warn the owner that clients won't be able to open it.
+ */
+async function shareAnyoneWithLink(drive: any, fileId: string): Promise<boolean> {
   const perms = await drive.permissions
     .list({ fileId, fields: "permissions(id,type)" })
     .catch(() => null);
-  if (perms?.data.permissions?.some((p: any) => p.type === "anyone")) return;
-  await drive.permissions
+  if (perms?.data.permissions?.some((p: any) => p.type === "anyone")) return true;
+  const created = await drive.permissions
     .create({ fileId, requestBody: { role: "reader", type: "anyone" } })
-    .catch(() => {});
+    .catch(() => null);
+  return Boolean(created);
 }
 
 /**
@@ -92,7 +98,7 @@ export async function ensureJobPhotosFolder(job: {
   title: string;
   driveFolderId?: string | null;
   drivePhotosFolderId?: string | null;
-}): Promise<{ folderId: string; link: string } | null> {
+}): Promise<{ folderId: string; link: string; shared: boolean } | null> {
   const auth = await getAuthorizedClient();
   if (!auth) return null;
   const drive = google.drive({ version: "v3", auth });
@@ -124,8 +130,8 @@ export async function ensureJobPhotosFolder(job: {
     await prisma.job.update({ where: { id: job.id }, data: { drivePhotosFolderId: photosId } });
   }
 
-  await shareAnyoneWithLink(drive, photosId);
-  return { folderId: photosId, link: `https://drive.google.com/drive/folders/${photosId}` };
+  const shared = await shareAnyoneWithLink(drive, photosId);
+  return { folderId: photosId, link: `https://drive.google.com/drive/folders/${photosId}`, shared };
 }
 
 /** Uploads image buffers into a job's shared "Photos (client)" folder. */
@@ -138,7 +144,7 @@ export async function uploadPhotosToJobFolder(
     drivePhotosFolderId?: string | null;
   },
   files: { name: string; data: Buffer; mimeType: string }[]
-): Promise<{ uploaded: UploadedFile[]; folderLink: string } | null> {
+): Promise<{ uploaded: UploadedFile[]; folderLink: string; shared: boolean } | null> {
   const auth = await getAuthorizedClient();
   if (!auth) return null;
   const ph = await ensureJobPhotosFolder(job);
@@ -159,7 +165,7 @@ export async function uploadPhotosToJobFolder(
       mimeType: created.data.mimeType || f.mimeType,
     });
   }
-  return { uploaded, folderLink: ph.link };
+  return { uploaded, folderLink: ph.link, shared: ph.shared };
 }
 
 /** Uploads a buffer into a job's Drive folder and returns shareable metadata. */
