@@ -283,16 +283,21 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowNew(true)}
-        className="fixed bottom-24 right-1/2 z-30 flex translate-x-[15rem] items-center gap-2 rounded-full bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition active:scale-95 max-[33rem]:right-5 max-[33rem]:translate-x-0"
-      >
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-        </svg>
-        New job
-      </button>
+      {/* FAB — pinned to the right of the centred content column so it never
+          runs off-screen on a phone (the old translate hack did). */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-30">
+        <div className="mx-auto flex max-w-2xl justify-end px-4">
+          <button
+            onClick={() => setShowNew(true)}
+            className="pointer-events-auto flex items-center gap-2 rounded-full bg-brand-600 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition active:scale-95"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            New job
+          </button>
+        </div>
+      </div>
 
       <Modal open={showNew} onClose={() => setShowNew(false)} title="New job">
         <JobForm onSubmit={createJob} onCancel={() => setShowNew(false)} submitLabel="Create job" />
