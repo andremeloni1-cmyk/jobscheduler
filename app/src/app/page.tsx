@@ -270,13 +270,13 @@ export default function DashboardPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
+            <div key={i} className="h-28 skeleton rounded-2xl" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState onAdd={() => setShowNew(true)} />
       ) : (
-        <div className="space-y-3">
+        <div className="stagger space-y-3">
           {filtered.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}

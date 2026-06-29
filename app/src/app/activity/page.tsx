@@ -71,7 +71,7 @@ export default function ActivityPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-stone-100 dark:bg-night-800" />
+            <div key={i} className="h-14 skeleton rounded-xl" />
           ))}
         </div>
       ) : items.length === 0 ? (

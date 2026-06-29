@@ -105,7 +105,7 @@ export default function ReportsPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
+            <div key={i} className="h-20 skeleton rounded-2xl" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
