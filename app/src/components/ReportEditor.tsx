@@ -30,11 +30,18 @@ export function ReportEditor({
   onClose?: () => void;
 }) {
   const [data, setData] = useState<ReportData>(() => {
+    let init: ReportData = {};
     try {
-      return existing?.data ? JSON.parse(existing.data) : {};
+      init = existing?.data ? JSON.parse(existing.data) : {};
     } catch {
-      return {};
+      init = {};
     }
+    // Default the Site-photos link to the job's uploaded-photos folder so the
+    // report links the dashboard photos automatically (no need to paste it).
+    if (!init.driveImagesLink && job.drivePhotosFolderId) {
+      init.driveImagesLink = `https://drive.google.com/drive/folders/${job.drivePhotosFolderId}`;
+    }
+    return init;
   });
   const [reportId, setReportId] = useState<string | undefined>(existing?.id);
   const [busy, setBusy] = useState<string | null>(null);
@@ -269,6 +276,11 @@ export function ReportEditor({
           >
             {job.drivePhotosFolderId ? "Use this job’s photos folder" : "Use this job’s Drive folder"}
           </button>
+        )}
+        {job.drivePhotosFolderId && data.driveImagesLink === photosFolderLink && (
+          <p className="mt-1 text-xs text-stone-400">
+            Linked to this job’s uploaded photos — clients can view them from the report.
+          </p>
         )}
       </div>
 
