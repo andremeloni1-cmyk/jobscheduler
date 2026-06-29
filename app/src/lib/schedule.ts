@@ -25,11 +25,6 @@ function atWorkStart(d: Date): Date {
   x.setUTCHours(WORK_START_HOUR, WORK_START_MIN, 0, 0);
   return x;
 }
-function atWorkEnd(d: Date): Date {
-  const x = new Date(d);
-  x.setUTCHours(WORK_END_HOUR, WORK_END_MIN, 0, 0);
-  return x;
-}
 function isWeekend(d: Date): boolean {
   const day = d.getUTCDay();
   return day === 0 || day === 6;
@@ -43,41 +38,26 @@ export type DaySegment = { start: Date; end: Date };
 
 /**
  * Splits a job into one segment per working day (6:30am–3:00pm), starting on the
- * job's start date. The first day honours the job's actual start time; later
- * days run a full work day. The last day ends when the remaining work is done.
- * Weekends are skipped. Always returns at least one segment.
+ * job's start date. The number of days is `ceil(duration / one work day)`, so
+ * "1 day" is always one day-cell regardless of the start time (a late start no
+ * longer spills a few minutes onto an extra day). The first day honours the
+ * job's actual start time; later days start at 6:30am; the last day ends when
+ * the remaining work is done. Weekends are skipped.
  */
 export function workdaySegments(start: Date, durationMins?: number | null): DaySegment[] {
   const total = Math.max(15, Math.round(durationMins && durationMins > 0 ? durationMins : WORKDAY_MINS));
+  const days = Math.max(1, Math.ceil(total / WORKDAY_MINS));
   const segments: DaySegment[] = [];
   let remaining = total;
   let cursor = new Date(start);
-  let first = true;
 
-  for (let guard = 0; guard < 90 && remaining > 0; guard++) {
-    if (isWeekend(cursor)) {
-      cursor = atWorkStart(addUTCDays(cursor, 1));
-      continue;
-    }
-    const segStart = first ? new Date(cursor) : atWorkStart(cursor);
-    const dayEnd = atWorkEnd(segStart);
-    const availMins = Math.max(0, (dayEnd.getTime() - segStart.getTime()) / 60_000);
-    if (availMins <= 0) {
-      // Start time was at/after end of day — push to next day.
-      cursor = atWorkStart(addUTCDays(segStart, 1));
-      first = false;
-      continue;
-    }
-    const use = Math.min(remaining, availMins);
-    segments.push({ start: segStart, end: new Date(segStart.getTime() + use * 60_000) });
-    remaining -= use;
-    first = false;
+  for (let i = 0; i < days; i++) {
+    while (isWeekend(cursor)) cursor = atWorkStart(addUTCDays(cursor, 1));
+    const segStart = i === 0 ? new Date(cursor) : atWorkStart(cursor);
+    const mins = Math.min(remaining, WORKDAY_MINS);
+    segments.push({ start: segStart, end: new Date(segStart.getTime() + mins * 60_000) });
+    remaining -= mins;
     cursor = atWorkStart(addUTCDays(segStart, 1));
-  }
-
-  if (segments.length === 0) {
-    const s = new Date(start);
-    segments.push({ start: s, end: new Date(s.getTime() + total * 60_000) });
   }
   return segments;
 }
