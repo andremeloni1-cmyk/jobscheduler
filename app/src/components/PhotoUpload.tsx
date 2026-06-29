@@ -106,7 +106,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 transition hover:bg-brand-100 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-50 dark:bg-brand-500/15 px-4 py-2.5 text-sm font-semibold text-brand-700 dark:text-brand-300 ring-1 ring-inset ring-brand-200 transition hover:bg-brand-100 disabled:opacity-50"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="6" width="18" height="14" rx="2" />
@@ -120,7 +120,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
         <ul className="space-y-2">
           {photos.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700">
+              <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
                 <span>🖼</span>
                 <span className="truncate">{p.name}</span>
               </span>
@@ -133,13 +133,13 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-stone-400">
+        <p className="text-sm text-stone-400 dark:text-slate-500">
           No photos yet. Upload site photos and a shareable link is created for the client automatically.
         </p>
       )}
 
       {clientLink && (
-        <div className="rounded-xl bg-stone-50 p-3 ring-1 ring-inset ring-stone-200">
+        <div className="rounded-xl bg-stone-50 dark:bg-night-850 p-3 ring-1 ring-inset ring-stone-200 dark:ring-night-line">
           <p className="label mb-1">Client photo link (anyone with the link can view)</p>
           <div className="flex items-center gap-2">
             <a
@@ -153,7 +153,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
             <button
               type="button"
               onClick={copyLink}
-              className="shrink-0 rounded-lg bg-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-300"
+              className="shrink-0 rounded-lg bg-stone-200 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-slate-200 hover:bg-stone-300"
             >
               {copied ? "Copied ✓" : "Copy"}
             </button>
@@ -161,7 +161,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
         </div>
       )}
 
-      {msg && <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-700">{msg}</p>}
+      {msg && <p className="rounded-lg bg-stone-100 dark:bg-night-800 px-3 py-2 text-sm text-stone-700 dark:text-slate-200">{msg}</p>}
     </div>
   );
 }

@@ -64,32 +64,32 @@ export default function ActivityPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">Activity</h1>
-        <p className="text-sm text-stone-500">What the app did automatically — scans, calendar, emails, files.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Activity</h1>
+        <p className="text-sm text-stone-500 dark:text-slate-400">What the app did automatically — scans, calendar, emails, files.</p>
       </header>
 
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-stone-100" />
+            <div key={i} className="h-14 animate-pulse rounded-xl bg-stone-100 dark:bg-night-800" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="card px-6 py-12 text-center text-sm text-stone-400">Nothing logged yet.</div>
+        <div className="card px-6 py-12 text-center text-sm text-stone-400 dark:text-slate-500">Nothing logged yet.</div>
       ) : (
         <div className="space-y-5">
           {groups.map(([label, acts]) => (
             <div key={label}>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-400">{label}</h2>
-              <div className="card divide-y divide-stone-100">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-400 dark:text-slate-500">{label}</h2>
+              <div className="card divide-y divide-stone-100 dark:divide-night-line2">
                 {acts.map((a) => (
                   <div key={a.id} className="flex items-start gap-3 px-3.5 py-2.5">
                     <span className="mt-0.5 text-base">{ICON[a.type] || "•"}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-stone-800">{a.message}</p>
-                      <p className="mt-0.5 text-xs text-stone-400">
+                      <p className="text-sm text-stone-800 dark:text-slate-100">{a.message}</p>
+                      <p className="mt-0.5 text-xs text-stone-400 dark:text-slate-500">
                         {a.job ? (
-                          <Link href={`/jobs/${a.job.id}`} className="font-medium text-brand-600">
+                          <Link href={`/jobs/${a.job.id}`} className="font-medium text-brand-600 dark:text-brand-300">
                             {a.job.title}
                           </Link>
                         ) : (

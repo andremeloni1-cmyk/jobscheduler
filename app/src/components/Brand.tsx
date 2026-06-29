@@ -35,8 +35,8 @@ export function Brand({
             <SawIcon className="h-8 w-8" />
           </div>
         )}
-        <h1 className="text-2xl font-bold text-stone-900">{name}</h1>
-        {tagline && <p className="mb-6 text-sm text-stone-500">{tagline}</p>}
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-slate-100">{name}</h1>
+        {tagline && <p className="mb-6 text-sm text-stone-500 dark:text-slate-400">{tagline}</p>}
       </div>
     );
   }
@@ -48,8 +48,8 @@ export function Brand({
         <img src={logoSrc} alt="" className="h-9 max-w-[110px] object-contain" />
       )}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900">{name}</h1>
-        {tagline && <p className="text-sm text-stone-500">{tagline}</p>}
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">{name}</h1>
+        {tagline && <p className="text-sm text-stone-500 dark:text-slate-400">{tagline}</p>}
       </div>
     </div>
   );

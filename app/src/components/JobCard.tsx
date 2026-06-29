@@ -22,35 +22,35 @@ export function JobCard({ job }: { job: JobDTO }) {
               {job.priority === "high" && (
                 <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" title="High priority" />
               )}
-              <h3 className="truncate font-semibold text-stone-900">{job.title}</h3>
+              <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">{job.title}</h3>
             </div>
-            <p className="mt-0.5 truncate text-sm text-stone-500">
+            <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-slate-400">
               {job.clientName || "No client"} · {job.reference}
             </p>
           </div>
           <StatusPill status={job.status} />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-600">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-600 dark:text-slate-300">
           <span className="inline-flex items-center gap-1.5">
             <CalIcon /> {fmtDay(job.scheduledStart)}
-            {job.scheduledStart && <span className="text-stone-400">· {fmtRange(job.scheduledStart, job.scheduledEnd)}</span>}
+            {job.scheduledStart && <span className="text-stone-400 dark:text-slate-500">· {fmtRange(job.scheduledStart, job.scheduledEnd)}</span>}
           </span>
           {job.quoteAmount != null && (
-            <span className="inline-flex items-center gap-1.5 font-medium text-stone-700">
+            <span className="inline-flex items-center gap-1.5 font-medium text-stone-700 dark:text-slate-200">
               {fmtMoney(job.quoteAmount, job.currency)}
             </span>
           )}
         </div>
 
         {(job.address || (job.documents && job.documents.length > 0) || awaitingPlans(job)) && (
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-400">
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-400 dark:text-slate-500">
             {job.address && <span className="inline-flex items-center gap-1 truncate"><PinIcon /> {job.address}</span>}
             {job.documents && job.documents.length > 0 && (
               <span className="inline-flex items-center gap-1">📎 {job.documents.length}</span>
             )}
             {awaitingPlans(job) && (
-              <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">Awaiting plans</span>
+              <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">Awaiting plans</span>
             )}
           </div>
         )}
@@ -61,7 +61,7 @@ export function JobCard({ job }: { job: JobDTO }) {
 
 function CalIcon() {
   return (
-    <svg className="h-4 w-4 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg className="h-4 w-4 text-stone-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M3 9h18M8 3v4M16 3v4" strokeLinecap="round" />
     </svg>

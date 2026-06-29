@@ -148,7 +148,7 @@ export default function DashboardPage() {
           <Link
             href="/activity"
             aria-label="Activity"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-stone-500 ring-1 ring-stone-200"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-night-900 text-stone-500 dark:text-slate-400 ring-1 ring-stone-200 dark:ring-night-line"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 8v4l3 2" strokeLinecap="round" strokeLinejoin="round" />
@@ -184,7 +184,7 @@ export default function DashboardPage() {
       {/* Needs review — possibly moved/cancelled */}
       {review.length > 0 && (
         <section className="mb-5">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-700">
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-300">
             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
               {review.length}
             </span>
@@ -194,13 +194,13 @@ export default function DashboardPage() {
             {review.map((job) => (
               <div key={job.id} className="card border-l-4 border-amber-400 p-3.5">
                 <Link href={`/jobs/${job.id}`} className="block">
-                  <h3 className="truncate font-semibold text-stone-900">{job.title}</h3>
-                  <p className="mt-0.5 text-sm text-amber-700">⚠️ Not in this week’s email — may be moved or cancelled</p>
-                  <p className="mt-0.5 truncate text-xs text-stone-500">{job.clientName || job.leadSource}</p>
+                  <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">{job.title}</h3>
+                  <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-300">⚠️ Not in this week’s email — may be moved or cancelled</p>
+                  <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-slate-400">{job.clientName || job.leadSource}</p>
                 </Link>
                 <div className="mt-3 flex gap-2">
                   <button className="btn-secondary flex-1 py-2" onClick={() => clearFlag(job)}>Keep — it’s fine</button>
-                  <button className="rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700" onClick={() => cancelJob(job)}>Cancel job</button>
+                  <button className="rounded-xl bg-red-50 dark:bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300" onClick={() => cancelJob(job)}>Cancel job</button>
                 </div>
               </div>
             ))}
@@ -227,7 +227,7 @@ export default function DashboardPage() {
         <button
           onClick={scanInbox}
           disabled={scanning}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-stone-600 ring-1 ring-stone-200 transition active:scale-[0.99] disabled:opacity-50"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white dark:bg-night-900 px-4 py-2.5 text-sm font-semibold text-stone-600 dark:text-slate-300 ring-1 ring-stone-200 dark:ring-night-line transition active:scale-[0.99] disabled:opacity-50"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -245,7 +245,7 @@ export default function DashboardPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <svg className="absolute left-3 top-3 h-5 w-5 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute left-3 top-3 h-5 w-5 text-stone-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4-4" strokeLinecap="round" />
         </svg>
@@ -258,7 +258,7 @@ export default function DashboardPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              filter === f ? "bg-brand-600 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200"
+              filter === f ? "bg-brand-600 text-white" : "bg-white dark:bg-night-900 text-stone-600 dark:text-slate-300 ring-1 ring-stone-200 dark:ring-night-line"
             }`}
           >
             {f === "active" ? "Active" : STATUS_LABELS[f as keyof typeof STATUS_LABELS]}
@@ -270,7 +270,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-stone-100" />
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-stone-100 dark:bg-night-800" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -304,8 +304,8 @@ export default function DashboardPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card px-3 py-3 text-center">
-      <div className="text-lg font-bold text-stone-900">{value}</div>
-      <div className="text-xs text-stone-500">{label}</div>
+      <div className="text-lg font-bold text-stone-900 dark:text-slate-100">{value}</div>
+      <div className="text-xs text-stone-500 dark:text-slate-400">{label}</div>
     </div>
   );
 }
@@ -313,12 +313,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 dark:bg-brand-500/15 text-brand-500">
         <SawIcon />
       </div>
       <div>
-        <p className="font-semibold text-stone-800">No jobs here yet</p>
-        <p className="text-sm text-stone-500">Add your first joinery job to get started.</p>
+        <p className="font-semibold text-stone-800 dark:text-slate-100">No jobs here yet</p>
+        <p className="text-sm text-stone-500 dark:text-slate-400">Add your first joinery job to get started.</p>
       </div>
       <button className="btn-primary" onClick={onAdd}>
         Add a job
