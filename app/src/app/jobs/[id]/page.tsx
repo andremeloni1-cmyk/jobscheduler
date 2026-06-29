@@ -361,7 +361,7 @@ export default function JobDetailPage() {
         )}
       </div>
       {confirmDelete && (
-        <p className="mt-2 text-right text-xs text-stone-400 dark:text-slate-500">This also removes its calendar event.</p>
+        <p className="mt-2 text-right text-xs text-stone-400 dark:text-slate-500">Removes its calendar event. You can restore it for 30 days from Settings → Recently deleted.</p>
       )}
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit job">

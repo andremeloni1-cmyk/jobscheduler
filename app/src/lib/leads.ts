@@ -143,7 +143,7 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
 
     // Open jobs already in the app from this company, to reconcile against.
     const existing = await prisma.job.findMany({
-      where: { leadSource: { contains: domain }, status: { in: ["lead", "accepted", "scheduled", "in_progress"] } },
+      where: { leadSource: { contains: domain }, status: { in: ["lead", "accepted", "scheduled", "in_progress"] }, deletedAt: null },
       include: { documents: true },
     });
     const matchedIds = new Set<string>();

@@ -40,7 +40,7 @@ const ACTIVE = (s: string) => !["completed", "cancelled"].includes(s);
 export async function GET() {
   if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
-  const jobs = await prisma.job.findMany({ orderBy: { createdAt: "desc" } });
+  const jobs = await prisma.job.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" } });
 
   const map = new Map<string, ClientAgg>();
   for (const j of jobs) {

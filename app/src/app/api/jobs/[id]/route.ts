@@ -57,13 +57,22 @@ export async function PATCH(req: Request, { params }: Params) {
   return json({ job });
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
   if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
-  const existing = await prisma.job.findUnique({ where: { id: (await params).id } });
+  const id = (await params).id;
+  const existing = await prisma.job.findUnique({ where: { id } });
   if (!existing) return json({ error: "not found" }, 404);
 
-  // Feature 2: deleting a job also removes its calendar event.
+  // Deleting always clears the calendar event.
   await removeCalendar(existing).catch(() => {});
-  await prisma.job.delete({ where: { id: (await params).id } });
+
+  // ?hard=1 → permanent (used by "Delete forever" in Recently deleted).
+  // Otherwise soft-delete: hide it but keep it restorable for 30 days.
+  const hard = new URL(req.url).searchParams.get("hard") === "1";
+  if (hard) {
+    await prisma.job.delete({ where: { id } });
+  } else {
+    await prisma.job.update({ where: { id }, data: { deletedAt: new Date() } });
+  }
   return json({ ok: true });
 }

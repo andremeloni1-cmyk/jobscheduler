@@ -10,8 +10,21 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const scheduled = searchParams.get("scheduled");
+  const deleted = searchParams.get("deleted") === "1";
 
-  const where: Record<string, unknown> = {};
+  // "Recently deleted" view: purge anything binned over 30 days ago, then list
+  // the rest (newest-deleted first). Default view excludes deleted jobs.
+  if (deleted) {
+    const cutoff = new Date(Date.now() - 30 * 86_400_000);
+    await prisma.job.deleteMany({ where: { deletedAt: { lt: cutoff } } });
+    const jobs = await prisma.job.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" },
+    });
+    return json({ jobs });
+  }
+
+  const where: Record<string, unknown> = { deletedAt: null };
   if (status) where.status = status;
   if (scheduled === "1") where.scheduledStart = { not: null };
 
