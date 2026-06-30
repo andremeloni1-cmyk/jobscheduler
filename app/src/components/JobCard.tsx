@@ -16,7 +16,7 @@ function awaitingPlans(job: JobDTO): boolean {
 export function JobCard({ job }: { job: JobDTO }) {
   return (
     <Link href={`/jobs/${job.id}`} className="block">
-      <div className="card p-4 transition hover:shadow-md active:scale-[0.99]">
+      <div className="card tap p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">

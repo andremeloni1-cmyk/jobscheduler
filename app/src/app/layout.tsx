@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
-          <main className="fade-in flex-1 pb-24">{children}</main>
+          <main className="flex-1 pb-24">{children}</main>
           <BottomNav />
         </div>
       </body>
