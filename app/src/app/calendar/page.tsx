@@ -275,91 +275,102 @@ export default function CalendarPage() {
 
       {mode === "month" ? (
         <>
-          {/* Month nav */}
-          <div className="mb-3 flex items-center justify-between">
-            <button className="btn-ghost px-2" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-slate-800 dark:text-slate-100">
-                {month.toLocaleDateString("en-AU", { month: "long", year: "numeric", timeZone: "UTC" })}
-              </span>
-              <button
-                className="btn-secondary px-2.5 py-1 text-xs"
-                onClick={() => {
-                  setMonth(startOfMonth(todayUTC()));
-                  setSelectedDay(todayUTC());
-                }}
-              >
-                Today
-              </button>
-            </div>
-            <button className="btn-ghost px-2" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
-          </div>
-
-          {/* Weekday header */}
-          <div className="mb-1 grid grid-cols-7 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
-            {WEEKDAYS.map((d) => (
-              <div key={d} className="py-1">{d}</div>
-            ))}
-          </div>
-
-          {/* Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {monthCells.map((day) => {
-              const inMonth = day.getUTCMonth() === month.getUTCMonth();
-              const isToday = sameDay(day, today);
-              const isSelected = sameDay(day, selectedDay);
-              const dayJobs = jobsForDay(day);
-              const dayBusy = externalForDay(day);
-              return (
-                <button
-                  key={day.toISOString()}
-                  onClick={() => setSelectedDay(day)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => dropOnDay(day)}
-                  className={`flex min-h-[3.6rem] flex-col items-center rounded-xl p-1 text-center transition ${
-                    isSelected ? "ring-2 ring-brand-500" : ""
-                  } ${inMonth ? "bg-white dark:bg-night-900" : "bg-slate-50 dark:bg-night-850"} ${dragId ? "ring-1 ring-dashed ring-brand-300" : ""}`}
-                >
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${
-                      isToday ? "bg-brand-600 font-bold text-white" : inMonth ? "text-slate-700 dark:text-slate-200" : "text-slate-300 dark:text-slate-600"
-                    }`}
+          {/* Dark calendar panel — month grid on black, with a white sheet that
+              rises (re-animates) to show the selected day's jobs when a date is tapped. */}
+          <div className="overflow-hidden rounded-bento bg-ink text-white shadow-bento">
+            <div className="px-5 pt-5">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-3xl font-bold tracking-tight">
+                  {month.toLocaleDateString("en-AU", { month: "long", timeZone: "UTC" })}
+                  <span className="ml-2 font-semibold text-white/40">
+                    {month.toLocaleDateString("en-AU", { year: "numeric", timeZone: "UTC" })}
+                  </span>
+                </h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => shiftMonth(-1)} aria-label="Previous month" className="grid h-9 w-9 place-items-center rounded-full text-lg text-white/70 transition hover:bg-white/10">‹</button>
+                  <button
+                    onClick={() => {
+                      setMonth(startOfMonth(todayUTC()));
+                      setSelectedDay(todayUTC());
+                    }}
+                    className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
                   >
-                    {day.getUTCDate()}
-                  </span>
-                  <span className="mt-1 flex flex-wrap items-center justify-center gap-0.5">
-                    {dayJobs.slice(0, 3).map((j) => (
-                      <span
-                        key={j.id}
-                        className={`h-1.5 w-1.5 rounded-full ${companyPalette(j).dot}`}
-                        title={`${j.title} — ${companyLabel(j)}`}
-                      />
-                    ))}
-                    {dayJobs.length > 3 && <span className="text-[9px] leading-none text-slate-400 dark:text-slate-500">+{dayJobs.length - 3}</span>}
-                    {dayBusy.length > 0 && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-400" title={`${dayBusy.length} calendar event(s)`} />
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    Today
+                  </button>
+                  <button onClick={() => shiftMonth(1)} aria-label="Next month" className="grid h-9 w-9 place-items-center rounded-full text-lg text-white/70 transition hover:bg-white/10">›</button>
+                </div>
+              </div>
 
-          {/* Selected day's jobs */}
-          <div className="mt-5">
-            <h2 className="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-              {selectedDay.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}
-            </h2>
-            <DayList
-              jobs={jobsForDay(selectedDay)}
-              busy={externalForDay(selectedDay)}
-              busyLabel={externalLabel}
-              onReschedule={setReschedule}
-              onOpen={setSummaryJob}
-              onOpenEvent={setSummaryEvent}
-              draggable
-              setDragId={setDragId}
-            />
+              {/* Weekday header (single letters) */}
+              <div className="mt-4 grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-wide text-white/35">
+                {WEEKDAYS.map((d) => (
+                  <div key={d} className="py-1">{d[0]}</div>
+                ))}
+              </div>
+
+              {/* Grid */}
+              <div className="grid grid-cols-7 gap-y-0.5 pb-5">
+                {monthCells.map((day) => {
+                  const inMonth = day.getUTCMonth() === month.getUTCMonth();
+                  const isToday = sameDay(day, today);
+                  const isSelected = sameDay(day, selectedDay);
+                  const dayJobs = jobsForDay(day);
+                  const dayBusy = externalForDay(day);
+                  return (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDay(day)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => dropOnDay(day)}
+                      className="flex flex-col items-center gap-1 py-1.5 outline-none"
+                    >
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm transition ${
+                          isSelected
+                            ? "bg-brand-500 font-bold text-white"
+                            : isToday
+                            ? "font-bold text-white ring-1 ring-inset ring-white/40"
+                            : inMonth
+                            ? "text-white/90 hover:bg-white/10"
+                            : "text-white/25"
+                        } ${dragId ? "ring-1 ring-dashed ring-white/30" : ""}`}
+                      >
+                        {day.getUTCDate()}
+                      </span>
+                      <span className="flex h-1 items-center justify-center gap-0.5">
+                        {dayJobs.length > 0 && <span className={`h-1 w-1 rounded-full ${isSelected ? "bg-white" : "bg-brand-400"}`} />}
+                        {dayJobs.length > 1 && <span className={`h-1 w-1 rounded-full ${isSelected ? "bg-white/70" : "bg-brand-400/70"}`} />}
+                        {dayBusy.length > 0 && <span className="h-1 w-1 rounded-full bg-white/40" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* White sheet — re-keyed on the selected day so it slides up on each tap */}
+            <div key={selectedDay.toISOString()} className="sheet-rise rounded-t-3xl bg-white p-4 dark:bg-night-900">
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200 dark:bg-night-line" />
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display text-base font-bold text-slate-900 dark:text-slate-100">
+                  {selectedDay.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}
+                </h3>
+                <span className="eyebrow">
+                  {jobsForDay(selectedDay).length} job{jobsForDay(selectedDay).length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <DayList
+                bare
+                jobs={jobsForDay(selectedDay)}
+                busy={externalForDay(selectedDay)}
+                busyLabel={externalLabel}
+                onReschedule={setReschedule}
+                onOpen={setSummaryJob}
+                onOpenEvent={setSummaryEvent}
+                draggable
+                setDragId={setDragId}
+              />
+            </div>
           </div>
         </>
       ) : (
@@ -528,6 +539,7 @@ function DayList({
   onOpenEvent,
   draggable,
   setDragId,
+  bare = false,
 }: {
   jobs: DayJob[];
   busy?: ExternalEvent[];
@@ -537,12 +549,19 @@ function DayList({
   onOpenEvent: (e: ExternalEvent) => void;
   draggable?: boolean;
   setDragId?: (id: string | null) => void;
+  // `bare` drops the card wrapper — used inside the calendar's white sheet,
+  // which is already a surface, to avoid a card-in-card look.
+  bare?: boolean;
 }) {
   if (jobs.length === 0 && busy.length === 0) {
-    return <div className="card px-4 py-6 text-center text-sm text-slate-300 dark:text-slate-600">No jobs scheduled</div>;
+    return (
+      <div className={`${bare ? "" : "card "}px-4 py-6 text-center text-sm text-slate-400 dark:text-slate-500`}>
+        No jobs scheduled
+      </div>
+    );
   }
   return (
-    <div className="card divide-y divide-slate-100 dark:divide-night-line2">
+    <div className={`${bare ? "" : "card "}divide-y divide-slate-100 dark:divide-night-line2`}>
       {jobs.map((job) => (
         <div
           key={job.id}
