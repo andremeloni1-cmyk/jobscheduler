@@ -176,7 +176,7 @@ export default function DashboardPage() {
       </header>
 
       {toast && (
-        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+        <div className="toast-in fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
           {toast}
         </div>
       )}

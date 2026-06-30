@@ -12,6 +12,13 @@ body {
   height: 100%;
 }
 
+/* Smooth in-page scrolling (anchors, scrollIntoView) — off for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Muted neutral "table" the bento cards float on. */
 body {
   @apply bg-slate-100 text-slate-800 antialiased;
@@ -56,6 +63,25 @@ html.dark {
   animation: fadeInUp 0.28s ease-out both;
 }
 
+/* Per-route entrance — applied by app/template.tsx so every screen slides up
+   into place on navigation (re-mounts on each route change). */
+@keyframes routeFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.route-fade {
+  animation: routeFade 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Toast / banner drop-in from the top. */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: none; }
+}
+.toast-in {
+  animation: toastIn 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Staggered list entrance — apply `stagger` to a list container. */
 .stagger > * {
   animation: fadeInUp 0.34s ease-out both;
@@ -94,8 +120,14 @@ html.dark .skeleton {
   .fade-in,
   .stagger > *,
   .sheet-rise,
+  .route-fade,
+  .toast-in,
   .skeleton {
     animation: none !important;
+  }
+  /* No lift/scale transforms when the user prefers reduced motion. */
+  .tap {
+    @apply transition-none hover:translate-y-0 hover:shadow-none active:scale-100;
   }
 }
 
@@ -148,8 +180,12 @@ a {
   /* ---- Bento surfaces ------------------------------------------------- */
   /* Standard tile: large radius, soft lifted shadow, no hairline ring. */
   .card {
-    @apply rounded-bento bg-white p-5 shadow-bento
+    @apply rounded-bento bg-white p-5 shadow-bento transition duration-200 ease-out
       dark:bg-night-900 dark:shadow-none dark:ring-1 dark:ring-night-line;
+  }
+  /* Add to a tappable card/row: gentle lift on hover, springy press on tap. */
+  .tap {
+    @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 active:scale-[0.985];
   }
   /* Pale-teal accent tile (the "hero" card). */
   .card-hero {

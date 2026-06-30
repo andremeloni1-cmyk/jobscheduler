@@ -24,7 +24,7 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center gap-1 pt-2.5 pb-3 text-xs font-medium transition"
+              className="flex flex-col items-center gap-1 pt-2.5 pb-3 text-xs font-medium transition active:scale-95"
             >
               <span
                 className={`flex h-9 w-14 items-center justify-center rounded-full transition ${
