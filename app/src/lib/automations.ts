@@ -10,9 +10,9 @@ import { isScheduledStatus } from "@/lib/types";
 import { jobEnd, businessTimeZone, WORK_START_HOUR, WORK_START_MIN } from "@/lib/schedule";
 import type { Job } from "@prisma/client";
 
-async function ownerName(): Promise<string> {
+async function ownerVars(): Promise<{ name: string; phone?: string | null; email?: string | null }> {
   const a = await prisma.account.findFirst();
-  return a?.name || "The Workshop";
+  return { name: a?.name || "The Workshop", phone: a?.phone, email: a?.email };
 }
 
 export async function logActivity(
@@ -100,7 +100,7 @@ export async function sendClientEmail(job: Job, key: "accepted" | "moved" | "can
     await logActivity(job.id, "email", `No client email on file — ${key} notice not sent`);
     return;
   }
-  const tpl = await resolveTemplate(job, key, jobTemplateVars(job, await ownerName()));
+  const tpl = await resolveTemplate(job, key, jobTemplateVars(job, await ownerVars()));
   if (!tpl || !tpl.enabled) return;
 
   const sent = await sendEmail({ to: job.clientEmail, subject: tpl.subject, body: tpl.body });

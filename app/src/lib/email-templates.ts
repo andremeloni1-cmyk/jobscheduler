@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { WORKDAY_MINS } from "@/lib/schedule";
 
 export type TemplateVars = Record<string, string>;
 
@@ -17,21 +18,38 @@ function fmtTime(d?: Date | null): string {
   return new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Human duration in whole working days, e.g. "1 day" / "3 days". */
+function fmtDuration(mins?: number | null): string {
+  const days = Math.max(1, Math.ceil((mins && mins > 0 ? mins : WORKDAY_MINS) / WORKDAY_MINS));
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+/** Owner/business details available to every template. */
+export type OwnerVars = { name: string; phone?: string | null; email?: string | null };
+
 export function jobTemplateVars(job: {
   title: string;
   reference: string;
   address?: string | null;
   clientName?: string | null;
+  clientPhone?: string | null;
   scheduledStart?: Date | null;
-}, ownerName: string): TemplateVars {
+  scheduledEnd?: Date | null;
+  durationMins?: number | null;
+}, owner: OwnerVars): TemplateVars {
   return {
     jobTitle: job.title,
     reference: job.reference,
     address: job.address || "TBC",
     clientName: job.clientName || "there",
+    clientPhone: job.clientPhone || "",
     startDate: fmtDate(job.scheduledStart),
     startTime: fmtTime(job.scheduledStart),
-    ownerName,
+    endTime: fmtTime(job.scheduledEnd),
+    duration: fmtDuration(job.durationMins),
+    ownerName: owner.name,
+    businessPhone: owner.phone || "",
+    businessEmail: owner.email || "",
   };
 }
 

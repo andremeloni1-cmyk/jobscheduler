@@ -13,6 +13,7 @@ export async function GET() {
     account: account
       ? {
           name: account.name,
+          phone: account.phone,
           email: account.email,
           googleEmail: account.googleEmail,
           calendarId: account.calendarId,
@@ -43,6 +44,7 @@ export async function PATCH(req: Request) {
         where: { id: account.id },
         data: {
           name: body.account.name ?? account.name,
+          phone: "phone" in body.account ? body.account.phone || null : account.phone,
           calendarId: body.account.calendarId ?? account.calendarId,
           signature: "signature" in body.account ? body.account.signature || null : account.signature,
           logo: "logo" in body.account ? body.account.logo || null : account.logo,

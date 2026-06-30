@@ -1,49 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_TEMPLATES } from "../src/lib/default-templates";
 
 const prisma = new PrismaClient();
-
-const DEFAULT_TEMPLATES = [
-  {
-    key: "accepted",
-    subject: "Your joinery job is booked in — {{jobTitle}}",
-    body:
-      "Hi {{clientName}},\n\n" +
-      "Great news — we've accepted your job \"{{jobTitle}}\" and booked it in for {{startDate}} at {{startTime}}.\n\n" +
-      "Address: {{address}}\n" +
-      "Reference: {{reference}}\n\n" +
-      "We'll be in touch the day before to confirm. If you need to change anything, just reply to this email.\n\n" +
-      "Kind regards,\n{{ownerName}}",
-  },
-  {
-    key: "moved",
-    subject: "Your joinery appointment has been rescheduled — {{jobTitle}}",
-    body:
-      "Hi {{clientName}},\n\n" +
-      "Just letting you know we've moved your job \"{{jobTitle}}\" to {{startDate}} at {{startTime}}.\n\n" +
-      "Address: {{address}}\n" +
-      "Reference: {{reference}}\n\n" +
-      "Apologies for any inconvenience. Reply to this email if that doesn't suit and we'll find another slot.\n\n" +
-      "Kind regards,\n{{ownerName}}",
-  },
-  {
-    key: "cancelled",
-    subject: "Your joinery appointment has been cancelled — {{jobTitle}}",
-    body:
-      "Hi {{clientName}},\n\n" +
-      "We're sorry to let you know that your job \"{{jobTitle}}\" (ref {{reference}}) has been cancelled.\n\n" +
-      "If you'd like to rebook, just reply to this email and we'll sort out a new date.\n\n" +
-      "Kind regards,\n{{ownerName}}",
-  },
-  {
-    key: "report",
-    subject: "Maintenance report for {{jobTitle}} — {{reference}}",
-    body:
-      "Hi {{clientName}},\n\n" +
-      "Please find attached the maintenance report for \"{{jobTitle}}\" (ref {{reference}}).\n\n" +
-      "Thank you for your business — please don't hesitate to get in touch with any questions.\n\n" +
-      "Kind regards,\n{{ownerName}}",
-  },
-];
 
 async function main() {
   const ownerEmail = process.env.OWNER_EMAIL || "owner@example.com";
