@@ -9,7 +9,10 @@ builder is built (Phase 2).
 - **GST-exclusive**: line rates exclude GST; invoices add **10% GST on top**.
 - **One invoice per job**, covering all rooms (no deposit/progress).
 - **Bill-to = the company** (the builder/customer on the job), not the homeowner.
-- Each line is prefixed with the job's **quote number** (e.g. `QU3190 …`).
+- Each line is prefixed with the job's **reference**, whose style is **per
+  company** (Mii = `QU3190`, Harrington = `Hauville …`, etc.).
+- A company can have **multiple rate tiers** toggled per job (e.g. Mii Kitchens
+  = builder vs client cabinet rates).
 - **Invoice number is assigned by Xero** (e.g. `INV-0244`) on push — not generated here.
 - **Units**: `each` (count), `metre` (qty = linear metres), `fixed` (1 × price).
 - Rates are **editable presets** — a job can override a line if needed.
