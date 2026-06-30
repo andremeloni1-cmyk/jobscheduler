@@ -5,6 +5,7 @@ import { StatusPill } from "./StatusPill";
 import { fmtMoney, fmtDay, fmtRange } from "@/lib/format";
 import type { JobDTO } from "@/lib/job";
 import { PaperclipIcon } from "@/components/icons";
+import { ChecklistBadge } from "@/components/ChecklistBadge";
 
 /** A confirmed/scheduled job that still has no PDF plan on file. */
 function awaitingPlans(job: JobDTO): boolean {
@@ -47,12 +48,13 @@ export function JobCard({ job }: { job: JobDTO }) {
           )}
         </div>
 
-        {(job.address || (job.documents && job.documents.length > 0) || awaitingPlans(job)) && (
+        {(job.address || (job.documents && job.documents.length > 0) || awaitingPlans(job) || (job.checklist?.length ?? 0) > 0) && (
           <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
             {job.address && <span className="inline-flex items-center gap-1 truncate"><PinIcon /> {job.address}</span>}
             {job.documents && job.documents.length > 0 && (
               <span className="inline-flex items-center gap-1"><PaperclipIcon className="h-3.5 w-3.5" /> {job.documents.length}</span>
             )}
+            <ChecklistBadge checklist={job.checklist} />
             {awaitingPlans(job) && (
               <span className="inline-flex items-center rounded-md bg-amber-50 dark:bg-amber-500/15 px-1.5 py-0.5 font-medium text-amber-700 dark:text-amber-300">Awaiting plans</span>
             )}
