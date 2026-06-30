@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { findLeadMessages } from "@/lib/google/gmail";
 import { uploadToJobFolder } from "@/lib/google/drive";
 import { isGoogleConnected } from "@/lib/google/oauth";
-import { logActivity } from "@/lib/automations";
+import { logActivity, removeCalendar } from "@/lib/automations";
 import { nextReference } from "@/lib/utils";
 import { extractJobsFromEmail, visionConfigured } from "@/lib/vision";
 import { WORKDAY_MINS, jobEnd } from "@/lib/schedule";
@@ -30,6 +30,7 @@ export type ScanResult = {
   connected: boolean;
   flagged: number; // jobs newly flagged as possibly moved/cancelled
   plans: number; // existing jobs that just got their plans (PDFs)
+  removed: number; // calendar jobs auto-soft-deleted after 2 missed emails
 };
 
 /** Uploads attachments into a job's Drive folder + records them as documents,
@@ -54,11 +55,11 @@ async function attachToJob(
 }
 
 export async function scanForLeads(opts: { force?: boolean; sinceDays?: number } = {}): Promise<ScanResult> {
-  if (!(await isGoogleConnected())) return { created: 0, connected: false, flagged: 0, plans: 0 };
+  if (!(await isGoogleConnected())) return { created: 0, connected: false, flagged: 0, plans: 0, removed: 0 };
 
   const sources = await prisma.leadSource.findMany({ where: { enabled: true } });
   const emails = sources.map((s) => s.email.toLowerCase());
-  if (emails.length === 0) return { created: 0, connected: true, flagged: 0, plans: 0 };
+  if (emails.length === 0) return { created: 0, connected: true, flagged: 0, plans: 0, removed: 0 };
 
   // Look back 14 days, then keep only the most recent email per company (Gmail
   // returns newest-first, so the first time a sender's domain appears is its
@@ -81,6 +82,7 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
   let created = 0;
   let flagged = 0;
   let plans = 0;
+  let removed = 0;
 
   for (const [domain, m] of latest) {
     if (NON_JOB_RE.test(m.subject || "")) continue;
@@ -154,10 +156,11 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
 
       if (match) {
         matchedIds.add(match.id);
-        // It's back on this week's email — clear any stale "possibly moved" flag.
-        if (match.flag === "review") {
-          await prisma.job.update({ where: { id: match.id }, data: { flag: null } });
-          await logActivity(match.id, "lead", "Still on this week's email — review flag cleared");
+        // It's back on this week's email — clear any stale "possibly moved" flag
+        // and reset the missed-email counter so it starts fresh if it vanishes later.
+        if (match.flag === "review" || (match.reviewMisses || 0) > 0) {
+          await prisma.job.update({ where: { id: match.id }, data: { flag: null, reviewMisses: 0, reviewMessageId: null } });
+          if (match.flag === "review") await logActivity(match.id, "lead", "Still on this week's email — review flag cleared");
         }
         // Plans arriving later: if the job has no PDF yet and this email carries one
         // for it, attach it.
@@ -200,19 +203,51 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
 
     // Moved/cancelled detection: a confirmed/scheduled job from this company that
     // falls within the window the schedule covers (~5 weeks) but isn't in their
-    // latest email is probably moved or cancelled — flag it (never auto-delete).
+    // latest email is probably moved or cancelled.
+    //  - First time it's missing            -> flag "review" for the owner.
+    //  - Missing again on a *later* email,
+    //    and the job is on Google Calendar  -> assume the company cancelled it and
+    //                                          soft-delete it (restorable 30 days),
+    //                                          clearing its calendar event.
+    // Counting is per distinct email (reviewMessageId), so re-scanning the same
+    // latest email never escalates. Only escalate when the email actually parsed
+    // into a job list (extracted !== null), so a mis-read email can't delete real jobs.
     const now = Date.now();
     const horizon = now + 35 * 86_400_000;
+    const trustParse = extracted !== null; // an empty parse already `continue`d above
     for (const j of existing) {
       if (matchedIds.has(j.id)) continue;
       if (!["accepted", "scheduled", "in_progress"].includes(j.status)) continue;
       if (!j.scheduledStart) continue;
       const t = new Date(j.scheduledStart).getTime();
       if (t < now - 86_400_000 || t > horizon) continue;
-      if (j.flag === "review") continue;
-      await prisma.job.update({ where: { id: j.id }, data: { flag: "review" } });
-      await logActivity(j.id, "lead", "Not in this week's email — may have been moved or cancelled");
-      flagged++;
+
+      // Count a miss once per distinct company email.
+      const newMiss = j.reviewMessageId !== m.messageId;
+      const misses = (j.reviewMisses || 0) + (newMiss ? 1 : 0);
+
+      // Second miss, job is on Google Calendar, email parsed cleanly → auto-remove.
+      if (trustParse && j.googleEventId && misses >= 2) {
+        await removeCalendar(j).catch(() => {});
+        await prisma.job.update({ where: { id: j.id }, data: { deletedAt: new Date(), flag: null } });
+        await logActivity(
+          j.id,
+          "status_change",
+          "Auto-removed — missing from this company's last 2 emails (assumed cancelled). Calendar event cleared; restorable for 30 days from Settings → Recently deleted."
+        );
+        removed++;
+        continue;
+      }
+
+      // Otherwise record/refresh the review flag (first miss, or not yet eligible).
+      const wasFlagged = j.flag === "review";
+      if (!wasFlagged || newMiss) {
+        await prisma.job.update({ where: { id: j.id }, data: { flag: "review", reviewMisses: misses, reviewMessageId: m.messageId } });
+      }
+      if (!wasFlagged) {
+        await logActivity(j.id, "lead", "Not in this week's email — may have been moved or cancelled");
+        flagged++;
+      }
     }
 
     await prisma.processedEmail
@@ -224,11 +259,11 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
   await logActivity(
     null,
     "scan",
-    `Inbox checked — ${created} new, ${plans} plans attached, ${flagged} flagged for review`,
-    { created, plans, flagged, companies: latest.size }
+    `Inbox checked — ${created} new, ${plans} plans attached, ${flagged} flagged for review, ${removed} auto-removed`,
+    { created, plans, flagged, removed, companies: latest.size }
   );
 
-  return { created, connected: true, flagged, plans };
+  return { created, connected: true, flagged, plans, removed };
 }
 
 /** Combines a YYYY-MM-DD date and optional HH:mm time into a Date, or null.
