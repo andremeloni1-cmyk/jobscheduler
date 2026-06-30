@@ -8,6 +8,7 @@ import { Modal } from "@/components/Modal";
 import { JobForm } from "@/components/JobForm";
 import { ReportEditor } from "@/components/ReportEditor";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { PdfUpload } from "@/components/PdfUpload";
 import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
@@ -276,9 +277,10 @@ export default function JobDetailPage() {
               </ul>
             ) : (
               <p className="text-sm text-slate-400 dark:text-slate-500">
-                No documents yet. Tap “Find in email” to pull job PDFs from Gmail into Google Drive.
+                No documents yet. Upload a PDF below, or tap “Find in email” to pull job PDFs from Gmail into Google Drive.
               </p>
             )}
+            <PdfUpload job={job} onChanged={load} />
             {hidden > 0 && (
               <button
                 onClick={() => setShowAllDocs((s) => !s)}
