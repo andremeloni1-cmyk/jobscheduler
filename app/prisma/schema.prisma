@@ -15,6 +15,9 @@ model Account {
   id              String   @id @default(cuid())
   email           String   @unique
   name            String?
+  // App login password (scrypt hash). When set, it overrides APP_PASSWORD and is
+  // what the owner changes from Settings → Password.
+  passwordHash    String?
   // Google OAuth — null until the owner connects their Google account.
   googleAccessToken  String?
   googleRefreshToken String?

@@ -311,6 +311,9 @@ export default function SettingsPage() {
         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Shown under the signature in client emails. PNG/JPG under 300KB. Save settings to apply.</p>
       </div>
 
+      {/* Password */}
+      <PasswordCard />
+
       {/* Email templates */}
       <div className="card mb-4 p-4">
         <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Automated emails</h2>
@@ -368,6 +371,66 @@ export default function SettingsPage() {
       </button>
 
       <p className="mt-6 text-center text-xs text-slate-300 dark:text-slate-500">JoineryFlow · v1.0</p>
+    </div>
+  );
+}
+
+/** Change the app login password (current → new → confirm). Self-contained so it
+ * doesn't touch the main settings save. */
+function PasswordCard() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function save() {
+    setMsg(null);
+    if (next.length < 6) return setMsg({ ok: false, text: "New password must be at least 6 characters." });
+    if (next !== confirm) return setMsg({ ok: false, text: "New passwords don't match." });
+    setSaving(true);
+    try {
+      await api("/api/auth/password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+      });
+      setMsg({ ok: true, text: "Password updated." });
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : "Couldn't update password." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card mb-4 p-4">
+      <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Password</h2>
+      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">Change the password you use to log in.</p>
+      <div className="space-y-2">
+        <div>
+          <label className="label">Current password</label>
+          <input className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">New password</label>
+          <input className="input" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Confirm new password</label>
+          <input className="input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </div>
+      </div>
+      {msg && (
+        <p className={`mt-2 text-sm ${msg.ok ? "text-emerald-600 dark:text-emerald-300" : "text-red-600 dark:text-red-300"}`} role={msg.ok ? undefined : "alert"}>
+          {msg.text}
+        </p>
+      )}
+      <button className="btn-primary mt-3 w-full" onClick={save} disabled={saving || !next || !confirm}>
+        {saving ? "Updating…" : "Update password"}
+      </button>
     </div>
   );
 }
