@@ -45,16 +45,22 @@ export async function GET() {
     prisma.leadSource.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
+  // The same company can have more than one trusted-sender row (e.g. a bare
+  // domain plus a specific address). Group everything by email *domain* so each
+  // company is a single client card, represented by its newest source row.
+  const domainOf = (email?: string | null) => (email || "").toLowerCase().split("@").pop() || "";
   const byId = new Map(sources.map((s) => [s.id, s]));
-  const matchDomain = (lead?: string | null) =>
-    lead ? sources.find((s) => lead.toLowerCase().includes(s.email.toLowerCase())) : undefined;
+  // sources are createdAt-ascending, so the last write per domain is the newest.
+  const repByDomain = new Map<string, (typeof sources)[number]>();
+  for (const s of sources) repByDomain.set(domainOf(s.email), s);
+  const matchDomain = (lead?: string | null) => (lead ? repByDomain.get(domainOf(lead)) : undefined);
 
   const map = new Map<string, CompanyAgg>();
-  // Seed enabled companies so they always show up as clients.
-  for (const s of sources) {
+  // Seed enabled companies (one per domain) so they always show up as clients.
+  for (const [domain, s] of repByDomain) {
     if (!s.enabled) continue;
-    map.set(s.id, {
-      key: s.id,
+    map.set(domain, {
+      key: domain,
       name: s.displayName || s.name,
       email: s.email,
       jobCount: 0,
@@ -68,7 +74,7 @@ export async function GET() {
 
   for (const j of jobs) {
     const src = (j.companyId && byId.get(j.companyId)) || matchDomain(j.leadSource);
-    const key = src ? src.id : "direct";
+    const key = src ? domainOf(src.email) : "direct";
     let c = map.get(key);
     if (!c) {
       c = {

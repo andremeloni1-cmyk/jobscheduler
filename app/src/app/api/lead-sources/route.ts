@@ -23,10 +23,21 @@ export async function POST(req: Request) {
     return json({ error: "Enter a valid email address or company domain" }, 400);
   }
 
-  const source = await prisma.leadSource.upsert({
-    where: { email },
-    update: { name: body.name || email, enabled: true },
-    create: { email, name: body.name || email },
-  });
+  // One company = one row. If a source for the same email domain already exists
+  // (e.g. a bare domain plus a specific address), reuse it instead of creating a
+  // duplicate that would show as a second client card.
+  const domain = email.split("@").pop() || email;
+  const existing = (await prisma.leadSource.findMany()).find(
+    (s) => (s.email.toLowerCase().split("@").pop() || s.email.toLowerCase()) === domain
+  );
+  if (existing) {
+    const source = await prisma.leadSource.update({
+      where: { id: existing.id },
+      data: { name: body.name || existing.name, enabled: true },
+    });
+    return json({ source }, 200);
+  }
+
+  const source = await prisma.leadSource.create({ data: { email, name: body.name || email } });
   return json({ source }, 201);
 }
