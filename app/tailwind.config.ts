@@ -6,37 +6,36 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Accent: teal. The whole UI references this single `brand` scale, so
-        // this is the one place the accent colour is defined.
+        // Accent: warm orange. The whole UI references this single `brand` scale,
+        // so this is the one place the accent colour is defined. (Black & white
+        // scheme — orange is the only chromatic accent.)
         brand: {
-          50: "#f0fdfa",
-          100: "#ccfbf1",
-          200: "#99f6e4",
-          300: "#5eead4",
-          400: "#2dd4bf",
-          500: "#14b8a6",
-          600: "#0d9488",
-          700: "#0f766e",
-          800: "#115e59",
-          900: "#134e4a",
-          950: "#042f2e",
+          50: "#fff5ed",
+          100: "#ffe7d4",
+          200: "#feccab",
+          300: "#fdac76",
+          400: "#fb8b4c",
+          500: "#f2752f",
+          600: "#e25f1c",
+          700: "#bb4716",
+          800: "#943919",
+          900: "#773117",
+          950: "#40160a",
         },
-        // Near-black "ink" used for the dominant pill buttons and dark accent
-        // tiles in the bento system (kept slightly warm so it doesn't read blue).
+        // Pure near-black "ink" — the dominant pill buttons and dark accent tiles.
         ink: {
-          DEFAULT: "#15160f",
-          800: "#202219",
-          700: "#2b2d22",
+          DEFAULT: "#111111",
+          800: "#1f1f1f",
+          700: "#2a2a2a",
         },
-        // Dark-mode neutral surfaces (used via dark: variants). Cool slate to
-        // match the design direction.
+        // Dark-mode surfaces — neutral near-black greys for a crisp B&W dark theme.
         night: {
-          950: "#0b0f17", // page background
-          900: "#121826", // card surface
-          850: "#161d2c", // elevated surface (inputs, raised tiles)
-          800: "#1b2433", // tag / chip background
-          line: "#222b3a", // hairline border / ring
-          line2: "#1c2433", // subtle divider
+          950: "#0a0a0a", // page background
+          900: "#141414", // card surface
+          850: "#1c1c1c", // elevated surface (inputs, raised tiles)
+          800: "#242424", // tag / chip background
+          line: "#2e2e2e", // hairline border / ring
+          line2: "#1f1f1f", // subtle divider
         },
       },
       fontFamily: {

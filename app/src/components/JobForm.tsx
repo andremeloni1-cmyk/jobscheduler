@@ -4,6 +4,7 @@ import { useState } from "react";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { toLocalInput, fromLocalInput } from "@/lib/format";
 import type { JobDTO } from "@/lib/job";
+import { PaperclipIcon, DocumentIcon } from "@/components/icons";
 
 export type JobFormValues = {
   title: string;
@@ -44,13 +45,15 @@ export function JobForm({
   submitLabel = "Save job",
 }: {
   job?: Partial<JobDTO>;
-  onSubmit: (payload: Record<string, unknown>) => Promise<void>;
+  onSubmit: (payload: Record<string, unknown>, pdf?: File | null) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
 }) {
   const [v, setV] = useState<JobFormValues>(initial(job));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Optional plans PDF, only offered when creating a new job (no `job` prop).
+  const [pdf, setPdf] = useState<File | null>(null);
 
   const set = (k: keyof JobFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setV((p) => ({ ...p, [k]: e.target.value }));
@@ -78,7 +81,7 @@ export function JobForm({
         scheduledStart: start ? start.toISOString() : null,
         scheduledEnd: end ? end.toISOString() : null,
         notes: v.notes || null,
-      });
+      }, pdf);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -163,6 +166,42 @@ export function JobForm({
         <label className="label">Notes</label>
         <textarea className="input" rows={2} value={v.notes} onChange={set("notes")} />
       </div>
+
+      {/* Attach a plans PDF when creating a job — uploaded to the job's Drive folder after it's saved. */}
+      {!job && (
+        <div>
+          <label className="label">Plans (PDF)</label>
+          {pdf ? (
+            <div className="flex items-center justify-between gap-2 rounded-2xl bg-slate-50 px-3.5 py-2.5 ring-1 ring-inset ring-slate-200 dark:bg-night-850 dark:ring-night-line">
+              <span className="inline-flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <DocumentIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{pdf.name}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdf(null)}
+                aria-label="Remove PDF"
+                className="rounded-full p-1 text-slate-400 hover:bg-slate-200/70 dark:text-slate-500 dark:hover:bg-night-800"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3.5 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:border-night-line dark:bg-night-850 dark:text-slate-300 dark:hover:bg-night-800">
+              <PaperclipIcon className="h-4 w-4" /> Attach a PDF
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => setPdf(e.target.files?.[0] || null)}
+              />
+            </label>
+          )}
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Optional — uploaded to the job&apos;s Google Drive folder after it&apos;s created.</p>
+        </div>
+      )}
 
       {error && <p role="alert" className="rounded-lg bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
