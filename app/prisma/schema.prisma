@@ -76,6 +76,10 @@ model Job {
   clientEmail  String?
   clientPhone  String?
 
+  // The joinery company this job is for (the "client"). Set when imported from
+  // a trusted sender, or chosen on the New-job form. References LeadSource.id.
+  companyId      String?
+
   // Lead provenance — set when a job was imported from an incoming email.
   leadSource     String?  // sender email address it came from
   gmailMessageId String?  // source email (shared by all jobs split from one email)
@@ -156,13 +160,15 @@ model ProcessedEmail {
 }
 
 // Trusted senders whose emails are turned into job leads to approve.
+// A joinery company the owner works for — these are the app's "clients".
 model LeadSource {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  enabled   Boolean  @default(true)
-  templates String?  // JSON: per-company email overrides keyed by accepted|moved|cancelled
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  displayName String?  // client-facing name when it differs (e.g. "A&Z (via Ingenuity)")
+  email       String   @unique
+  enabled     Boolean  @default(true)
+  templates   String?  // JSON: per-company email overrides keyed by accepted|moved|cancelled
+  createdAt   DateTime @default(now())
 }
 
 // Web Push subscriptions (one per device that opted in to notifications).

@@ -16,6 +16,8 @@ export interface JobDTO {
   clientName?: string | null;
   clientEmail?: string | null;
   clientPhone?: string | null;
+  companyId?: string | null;
+  companyName?: string | null; // resolved client-company display name (server-attached)
   googleEventId?: string | null;
   driveFolderId?: string | null;
   drivePhotosFolderId?: string | null;

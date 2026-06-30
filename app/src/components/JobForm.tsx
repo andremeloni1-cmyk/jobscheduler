@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { toLocalInput, fromLocalInput } from "@/lib/format";
-import type { JobDTO } from "@/lib/job";
+import { api, type JobDTO } from "@/lib/job";
 import { PaperclipIcon, DocumentIcon } from "@/components/icons";
+
+type CompanyOption = { id: string; name: string; displayName?: string | null; enabled: boolean };
 
 export type JobFormValues = {
   title: string;
+  companyId: string;
   description: string;
   status: string;
   priority: string;
@@ -24,6 +27,7 @@ export type JobFormValues = {
 function initial(job?: Partial<JobDTO>): JobFormValues {
   return {
     title: job?.title || "",
+    companyId: job?.companyId || "",
     description: job?.description || "",
     status: job?.status || "lead",
     priority: job?.priority || "normal",
@@ -54,6 +58,13 @@ export function JobForm({
   const [error, setError] = useState<string | null>(null);
   // Optional plans PDF, only offered when creating a new job (no `job` prop).
   const [pdf, setPdf] = useState<File | null>(null);
+  // The client companies to choose from.
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  useEffect(() => {
+    api<{ sources: CompanyOption[] }>("/api/lead-sources")
+      .then((r) => setCompanies((r.sources || []).filter((s) => s.enabled)))
+      .catch(() => {});
+  }, []);
 
   const set = (k: keyof JobFormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setV((p) => ({ ...p, [k]: e.target.value }));
@@ -69,6 +80,7 @@ export function JobForm({
       const end = start ? new Date(start.getTime() + dur * 60_000) : null;
       await onSubmit({
         title: v.title.trim(),
+        companyId: v.companyId || null,
         description: v.description || null,
         status: v.status,
         priority: v.priority,
@@ -94,6 +106,18 @@ export function JobForm({
       <div>
         <label className="label">Job title</label>
         <input className="input" value={v.title} onChange={set("title")} placeholder="e.g. Oak staircase installation" autoFocus />
+      </div>
+
+      <div>
+        <label className="label">Client (company)</label>
+        <select className="input" value={v.companyId} onChange={set("companyId")}>
+          <option value="">— Select a company —</option>
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.displayName || c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

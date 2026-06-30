@@ -26,7 +26,10 @@ export function JobCard({ job }: { job: JobDTO }) {
               <h3 className="truncate font-semibold text-slate-900 dark:text-slate-100">{job.title}</h3>
             </div>
             <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">
-              {job.clientName || "No client"} · {job.reference}
+              {job.companyName || job.clientName || "No client"} · {job.reference}
+              {job.companyName && job.clientName && (
+                <span className="text-slate-400 dark:text-slate-500"> · {job.clientName}</span>
+              )}
             </p>
           </div>
           <StatusPill status={job.status} />

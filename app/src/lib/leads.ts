@@ -87,6 +87,9 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
   for (const [domain, m] of latest) {
     if (NON_JOB_RE.test(m.subject || "")) continue;
 
+    // The trusted-sender company this email's jobs belong to (the "client").
+    const companyId = sources.find((s) => domain.includes(s.email.toLowerCase()))?.id || null;
+
     const imageAttachments = m.attachments.filter((a) => IMAGE_RE.test(a.mimeType));
     const pdfAttachments = m.attachments.filter((a) => PDF_RE(a.filename, a.mimeType));
 
@@ -187,6 +190,7 @@ export async function scanForLeads(opts: { force?: boolean; sinceDays?: number }
           clientName: nj.clientName || m.fromName,
           clientPhone: nj.clientPhone,
           clientEmail: m.fromEmail,
+          companyId,
           leadSource: m.fromEmail,
           gmailMessageId: m.messageId,
           gmailThreadId: m.threadId,
@@ -296,7 +300,7 @@ function combineDateTime(date?: string, time?: string): Date | null {
 const DEFAULT_SOURCES = [
   { name: "mii Kitchens", email: "miikitchen.com.au" },
   { name: "Harrington Kitchens", email: "harringtonkitchens.com.au" },
-  { name: "Peter Baldwin (Ingenuity Joinery)", email: "ingenuityjoinery.com" },
+  { name: "Peter Baldwin (Ingenuity Joinery)", email: "ingenuityjoinery.com", displayName: "A&Z (via Ingenuity)" },
 ];
 
 /** Seeds the default trusted senders, but ONLY on first run (empty table).

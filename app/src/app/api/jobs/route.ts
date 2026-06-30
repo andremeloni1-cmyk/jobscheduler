@@ -2,8 +2,15 @@ import { prisma } from "@/lib/db";
 import { json, nextReference, parseDate } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { onStatusChange } from "@/lib/automations";
+import { companyResolver } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
+
+// Attach the resolved client-company display name to each job.
+async function withCompany<T extends { companyId?: string | null; leadSource?: string | null }>(jobs: T[]): Promise<(T & { companyName: string | null })[]> {
+  const resolve = await companyResolver();
+  return jobs.map((j) => ({ ...j, companyName: resolve(j) }));
+}
 
 export async function GET(req: Request) {
   if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
@@ -21,7 +28,7 @@ export async function GET(req: Request) {
       where: { deletedAt: { not: null } },
       orderBy: { deletedAt: "desc" },
     });
-    return json({ jobs });
+    return json({ jobs: await withCompany(jobs) });
   }
 
   const where: Record<string, unknown> = { deletedAt: null };
@@ -40,7 +47,7 @@ export async function GET(req: Request) {
       _count: { select: { reports: true } },
     },
   });
-  return json({ jobs });
+  return json({ jobs: await withCompany(jobs) });
 }
 
 export async function POST(req: Request) {
@@ -65,6 +72,7 @@ export async function POST(req: Request) {
       clientName: body.clientName || null,
       clientEmail: body.clientEmail || null,
       clientPhone: body.clientPhone || null,
+      companyId: body.companyId || null,
       quoteAmount: body.quoteAmount != null ? Number(body.quoteAmount) : null,
       durationMins: body.durationMins ? Number(body.durationMins) : 120,
       scheduledStart: parseDate(body.scheduledStart),
