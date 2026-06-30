@@ -132,7 +132,7 @@ export default function TodayPage() {
                       )}
                     </h3>
                   </Link>
-                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">{job.clientName || "—"}</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">{job.companyName || job.clientName || "—"}</p>
                 </div>
                 <StatusPill status={job.status} />
               </div>

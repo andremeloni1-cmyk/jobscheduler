@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { json, parseDate } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { onStatusChange, onReschedule, removeCalendar } from "@/lib/automations";
+import { companyResolver } from "@/lib/company";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,8 @@ export async function GET(_req: Request, { params }: Params) {
     },
   });
   if (!job) return json({ error: "not found" }, 404);
-  return json({ job });
+  const resolve = await companyResolver();
+  return json({ job: { ...job, companyName: resolve(job) } });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
@@ -35,6 +37,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if ("quoteAmount" in body) data.quoteAmount = body.quoteAmount != null ? Number(body.quoteAmount) : null;
   if ("durationMins" in body) data.durationMins = Number(body.durationMins) || existing.durationMins;
   if ("flag" in body) data.flag = body.flag || null; // clear/set the review flag
+  if ("companyId" in body) data.companyId = body.companyId || null;
 
   const timeChanged =
     ("scheduledStart" in body || "scheduledEnd" in body);

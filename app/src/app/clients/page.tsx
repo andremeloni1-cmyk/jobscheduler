@@ -8,7 +8,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { fmtMoney, fmtDay } from "@/lib/format";
 import { api } from "@/lib/job";
 import { companyPalette } from "@/lib/colors";
-import { UserIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
+import { UserIcon, PinIcon } from "@/components/icons";
 
 type ClientJob = {
   id: string;
@@ -19,14 +19,13 @@ type ClientJob = {
   scheduledEnd?: string | null;
   quoteAmount?: number | null;
   currency: string;
+  siteContact?: string | null;
+  address?: string | null;
 };
-type Client = {
+type Company = {
   key: string;
   name: string;
   email?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  leadSource?: string | null;
   jobCount: number;
   activeCount: number;
   totalValue: number;
@@ -36,15 +35,15 @@ type Client = {
 };
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Client | null>(null);
+  const [selected, setSelected] = useState<Company | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const { clients } = await api<{ clients: Client[] }>("/api/clients");
+        const { clients } = await api<{ clients: Company[] }>("/api/clients");
         setClients(clients);
       } finally {
         setLoading(false);
@@ -56,11 +55,7 @@ export default function ClientsPage() {
     const q = query.trim().toLowerCase();
     if (!q) return clients;
     return clients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.email || "").toLowerCase().includes(q) ||
-        (c.phone || "").toLowerCase().includes(q) ||
-        (c.address || "").toLowerCase().includes(q)
+      (c) => c.name.toLowerCase().includes(q) || c.jobs.some((j) => (j.siteContact || "").toLowerCase().includes(q))
     );
   }, [clients, query]);
 
@@ -68,15 +63,13 @@ export default function ClientsPage() {
     <div className="px-4 pt-6">
       <header className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Clients</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {clients.length} client{clients.length === 1 ? "" : "s"} · built from your jobs
-        </p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">The joinery companies you work for</p>
       </header>
 
       <div className="relative mb-3">
         <input
           className="input pl-10"
-          placeholder="Search name, email, phone, address…"
+          placeholder="Search company or site contact…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -89,14 +82,14 @@ export default function ClientsPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 skeleton rounded-2xl" />
+            <div key={i} className="h-20 skeleton rounded-bento" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<UserIcon className="h-7 w-7" />}
-          title={clients.length === 0 ? "No clients yet" : "No matches"}
-          subtitle={clients.length === 0 ? "Clients appear here automatically as jobs come in." : "No clients match your search."}
+          title={clients.length === 0 ? "No companies yet" : "No matches"}
+          subtitle={clients.length === 0 ? "Add a company under Settings → Incoming jobs." : "No companies match your search."}
         />
       ) : (
         <div className="space-y-2.5">
@@ -104,46 +97,31 @@ export default function ClientsPage() {
             <button
               key={c.key}
               onClick={() => setSelected(c)}
-              className={`card flex w-full items-center gap-3 border-l-4 p-3.5 text-left transition active:scale-[0.99] ${
-                companyPalette({ leadSource: c.leadSource, clientName: c.name, clientEmail: c.email }).bar
-              }`}
+              className={`card tap flex w-full items-center gap-3 border-l-4 p-3.5 text-left ${companyPalette({ companyId: c.key, companyName: c.name }).bar}`}
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-500 dark:bg-night-800 dark:text-slate-400">
                 {initials(c.name)}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-slate-900 dark:text-slate-100">{c.name}</p>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{c.email || c.phone || c.address || "—"}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fmtMoney(c.totalValue, c.currency)}</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">
-                  {c.jobCount} job{c.jobCount === 1 ? "" : "s"}
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {c.jobCount === 0 ? "No jobs yet" : `${c.jobCount} job${c.jobCount === 1 ? "" : "s"}`}
                   {c.activeCount > 0 && <span className="text-emerald-600 dark:text-emerald-300"> · {c.activeCount} active</span>}
                 </p>
               </div>
+              {c.totalValue > 0 && (
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{fmtMoney(c.totalValue, c.currency)}</p>
+                </div>
+              )}
             </button>
           ))}
         </div>
       )}
 
-      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "Client"}>
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.name || "Company"}>
         {selected && (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-2 text-sm">
-              {selected.email && (
-                <a href={`mailto:${selected.email}`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
-                  <MailIcon className="h-4 w-4" /> {selected.email}
-                </a>
-              )}
-              {selected.phone && (
-                <a href={`tel:${selected.phone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
-                  <PhoneIcon className="h-4 w-4" /> {selected.phone}
-                </a>
-              )}
-            </div>
-            {selected.address && <p className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400"><PinIcon className="h-4 w-4" /> {selected.address}</p>}
-
             <div className="grid grid-cols-3 gap-2 text-center">
               <Stat label="Jobs" value={String(selected.jobCount)} />
               <Stat label="Active" value={String(selected.activeCount)} />
@@ -152,26 +130,37 @@ export default function ClientsPage() {
 
             <div>
               <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Jobs</p>
-              <div className="card divide-y divide-slate-100 dark:divide-night-line2">
-                {selected.jobs.map((j) => (
-                  <Link
-                    key={j.id}
-                    href={`/jobs/${j.id}`}
-                    className="flex items-center gap-3 px-3.5 py-2.5 active:bg-slate-50 dark:active:bg-night-800"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{j.title}</p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {j.reference} · {fmtDay(j.scheduledStart)}
-                      </p>
-                    </div>
-                    {j.quoteAmount != null && (
-                      <span className="shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300">{fmtMoney(j.quoteAmount, j.currency)}</span>
-                    )}
-                    <StatusPill status={j.status} />
-                  </Link>
-                ))}
-              </div>
+              {selected.jobs.length === 0 ? (
+                <p className="card text-sm text-slate-400 dark:text-slate-500">No jobs for this company yet.</p>
+              ) : (
+                <div className="card divide-y divide-slate-100 dark:divide-night-line2">
+                  {selected.jobs.map((j) => (
+                    <Link
+                      key={j.id}
+                      href={`/jobs/${j.id}`}
+                      className="flex items-center gap-3 px-3.5 py-2.5 active:bg-slate-50 dark:active:bg-night-800"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{j.title}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                          {j.siteContact && (
+                            <span className="inline-flex items-center gap-1">
+                              <PinIcon className="h-3 w-3" />
+                              {j.siteContact}
+                              {" · "}
+                            </span>
+                          )}
+                          {j.reference} · {fmtDay(j.scheduledStart)}
+                        </p>
+                      </div>
+                      {j.quoteAmount != null && (
+                        <span className="shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300">{fmtMoney(j.quoteAmount, j.currency)}</span>
+                      )}
+                      <StatusPill status={j.status} />
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -190,7 +179,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const parts = name.trim().replace(/\(.*\)/, "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();

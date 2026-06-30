@@ -3,15 +3,19 @@
 // so it can run on both the server and the client.
 
 type CompanyLike = {
+  companyId?: string | null;
+  companyName?: string | null;
   leadSource?: string | null;
   clientName?: string | null;
   clientEmail?: string | null;
 };
 
-/** A stable key identifying the company a job came from / belongs to.
- * Prefers the trusted-sender domain it was imported from, then the client
- * name, then the client's email domain. */
+/** A stable key identifying the client-company a job belongs to. Prefers the
+ * explicit companyId, then the resolved company name, then the trusted-sender
+ * domain, then the client name / email domain. */
 export function companyKeyOf(job: CompanyLike): string {
+  if (job.companyId) return `id:${job.companyId}`;
+  if (job.companyName) return job.companyName.trim().toLowerCase();
   if (job.leadSource) return job.leadSource.trim().toLowerCase();
   if (job.clientName) return job.clientName.trim().toLowerCase();
   if (job.clientEmail) {
@@ -22,9 +26,10 @@ export function companyKeyOf(job: CompanyLike): string {
   return "—";
 }
 
-/** A short, human label for a company key (drops the leading "@"/domain noise
- * where a friendlier value is available). */
+/** A short, human label for a job's client-company. Prefers the resolved
+ * company name, then the homeowner name, then the sender. */
 export function companyLabel(job: CompanyLike): string {
+  if (job.companyName) return job.companyName.trim();
   if (job.clientName) return job.clientName.trim();
   if (job.leadSource) return job.leadSource.trim();
   if (job.clientEmail) return job.clientEmail.trim();

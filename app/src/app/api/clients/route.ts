@@ -13,15 +13,14 @@ type ClientJob = {
   scheduledEnd: Date | null;
   quoteAmount: number | null;
   currency: string;
+  siteContact: string | null; // the homeowner / end customer for this job
+  address: string | null;
 };
 
-type ClientAgg = {
+type CompanyAgg = {
   key: string;
   name: string;
   email: string | null;
-  phone: string | null;
-  address: string | null;
-  leadSource: string | null;
   jobCount: number;
   activeCount: number;
   totalValue: number;
@@ -33,51 +32,63 @@ type ClientAgg = {
 const ACTIVE = (s: string) => !["completed", "cancelled"].includes(s);
 
 /**
- * Clients are derived from jobs (grouped by email, falling back to name) since
- * jobs carry the denormalised client details. This means the list is always
- * populated from real data — including leads imported from email.
+ * "Clients" are the joinery companies the owner works for. Each job is grouped
+ * by its company (explicit companyId, else matched from the lead-source sender
+ * domain). The end customer/homeowner is kept per-job as the site contact.
+ * All enabled companies appear even with no jobs yet.
  */
 export async function GET() {
   if (!(await isAuthenticated())) return json({ error: "unauthorized" }, 401);
 
-  const jobs = await prisma.job.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" } });
+  const [jobs, sources] = await Promise.all([
+    prisma.job.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" } }),
+    prisma.leadSource.findMany({ orderBy: { createdAt: "asc" } }),
+  ]);
 
-  const map = new Map<string, ClientAgg>();
+  const byId = new Map(sources.map((s) => [s.id, s]));
+  const matchDomain = (lead?: string | null) =>
+    lead ? sources.find((s) => lead.toLowerCase().includes(s.email.toLowerCase())) : undefined;
+
+  const map = new Map<string, CompanyAgg>();
+  // Seed enabled companies so they always show up as clients.
+  for (const s of sources) {
+    if (!s.enabled) continue;
+    map.set(s.id, {
+      key: s.id,
+      name: s.displayName || s.name,
+      email: s.email,
+      jobCount: 0,
+      activeCount: 0,
+      totalValue: 0,
+      currency: "AUD",
+      lastActivityAt: "",
+      jobs: [],
+    });
+  }
+
   for (const j of jobs) {
-    const key = (j.clientEmail || j.clientName || "").trim().toLowerCase();
-    if (!key) continue; // skip jobs with no client identity at all
-
-    const when = (j.scheduledStart || j.createdAt).toISOString();
+    const src = (j.companyId && byId.get(j.companyId)) || matchDomain(j.leadSource);
+    const key = src ? src.id : "direct";
     let c = map.get(key);
     if (!c) {
       c = {
         key,
-        name: j.clientName || j.clientEmail || "Unnamed client",
-        email: j.clientEmail || null,
-        phone: j.clientPhone || null,
-        address: j.address || null,
-        leadSource: j.leadSource || null,
+        name: src ? src.displayName || src.name : "Direct / other",
+        email: src?.email || null,
         jobCount: 0,
         activeCount: 0,
         totalValue: 0,
         currency: j.currency || "AUD",
-        lastActivityAt: when,
+        lastActivityAt: "",
         jobs: [],
       };
       map.set(key, c);
     }
-
     c.jobCount += 1;
     if (ACTIVE(j.status)) c.activeCount += 1;
     if (j.status !== "cancelled" && j.quoteAmount) c.totalValue += j.quoteAmount;
-    // Jobs are pre-sorted newest-first, so the first non-null we see is the most
-    // recent — only fill gaps, never overwrite a fresher value.
-    if (!c.phone && j.clientPhone) c.phone = j.clientPhone;
-    if (!c.address && j.address) c.address = j.address;
-    if (!c.email && j.clientEmail) c.email = j.clientEmail;
-    if (!c.leadSource && j.leadSource) c.leadSource = j.leadSource;
+    const when = (j.scheduledStart || j.createdAt).toISOString();
     if (when > c.lastActivityAt) c.lastActivityAt = when;
-
     c.jobs.push({
       id: j.id,
       reference: j.reference,
@@ -87,9 +98,14 @@ export async function GET() {
       scheduledEnd: j.scheduledEnd,
       quoteAmount: j.quoteAmount,
       currency: j.currency,
+      siteContact: j.clientName || null,
+      address: j.address || null,
     });
   }
 
-  const clients = [...map.values()].sort((a, b) => b.lastActivityAt.localeCompare(a.lastActivityAt));
+  // Most active first; companies with no jobs sink to the bottom.
+  const clients = [...map.values()].sort(
+    (a, b) => b.jobCount - a.jobCount || b.lastActivityAt.localeCompare(a.lastActivityAt)
+  );
   return json({ clients });
 }
