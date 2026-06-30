@@ -21,8 +21,15 @@ const config: Config = {
           900: "#134e4a",
           950: "#042f2e",
         },
+        // Near-black "ink" used for the dominant pill buttons and dark accent
+        // tiles in the bento system (kept slightly warm so it doesn't read blue).
+        ink: {
+          DEFAULT: "#15160f",
+          800: "#202219",
+          700: "#2b2d22",
+        },
         // Dark-mode neutral surfaces (used via dark: variants). Cool slate to
-        // match the "Crisp Modern" direction.
+        // match the design direction.
         night: {
           950: "#0b0f17", // page background
           900: "#121826", // card surface
@@ -36,8 +43,15 @@ const config: Config = {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
       },
+      borderRadius: {
+        // Bento card geometry — large, soft corners.
+        bento: "26px",
+        "bento-sm": "18px",
+      },
       boxShadow: {
         card: "0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.08)",
+        // Soft, lifted bento shadow (cards float on the muted page background).
+        bento: "0 10px 30px -12px rgba(16,24,40,0.18), 0 2px 6px -2px rgba(16,24,40,0.06)",
         lift: "0 6px 16px -4px rgba(16,24,40,0.12), 0 2px 6px -2px rgba(16,24,40,0.08)",
       },
     },

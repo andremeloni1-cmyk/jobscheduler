@@ -78,7 +78,7 @@ export default function TodayPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <div key={i} className="h-32 skeleton rounded-2xl" />
+            <div key={i} className="h-32 skeleton rounded-bento" />
           ))}
         </div>
       ) : jobs.length === 0 ? (
@@ -90,6 +90,34 @@ export default function TodayPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {/* Bento summary */}
+          <div className="bento">
+            <div className="card-hero bento-wide">
+              <p className="eyebrow text-brand-700/80 dark:text-brand-200/80">On site today</p>
+              <p className="mt-1 font-display text-3xl font-bold">
+                {jobs.length} job{jobs.length === 1 ? "" : "s"}
+              </p>
+              <p className="mt-1 text-sm text-brand-900/70 dark:text-brand-50/70">
+                {today.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+            </div>
+            <div className="card-dark">
+              <p className="eyebrow text-slate-400">In progress</p>
+              <p className="mt-1 font-display text-3xl font-bold">
+                {jobs.filter((j) => j.status === "in_progress").length}
+              </p>
+            </div>
+            <div className="card">
+              <p className="eyebrow">Next</p>
+              <p className="mt-1 font-display text-xl font-bold text-slate-900 dark:text-slate-100">
+                {(() => {
+                  const next = jobs.find((j) => j.status !== "in_progress") || jobs[0];
+                  return next ? fmtRange(next._segStart, next._segEnd).split("–")[0] : "—";
+                })()}
+              </p>
+            </div>
+          </div>
+
           {jobs.map((job) => (
             <div key={job.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
@@ -113,7 +141,7 @@ export default function TodayPage() {
               {/* Quick contact / nav / docs */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {job.clientPhone && (
-                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
+                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
                     <PhoneIcon className="h-4 w-4" /> Call
                   </a>
                 )}
@@ -122,7 +150,7 @@ export default function TodayPage() {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200"
                   >
                     <NavigationIcon className="h-4 w-4" /> Navigate
                   </a>
@@ -130,7 +158,7 @@ export default function TodayPage() {
                 {(job.documents || [])
                   .filter((d) => d.webViewLink)
                   .map((d) => (
-                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
+                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
                       <PaperclipIcon className="h-4 w-4 shrink-0" /> {d.name}
                     </a>
                   ))}

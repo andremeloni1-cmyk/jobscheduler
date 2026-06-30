@@ -24,12 +24,20 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-1 py-3 text-xs font-medium transition ${
-                active ? "text-brand-600" : "text-slate-400 dark:text-slate-500"
-              }`}
+              className="flex flex-col items-center gap-1 pt-2.5 pb-3 text-xs font-medium transition"
             >
-              <Icon className="h-6 w-6" />
-              {label}
+              <span
+                className={`flex h-9 w-14 items-center justify-center rounded-full transition ${
+                  active
+                    ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200"
+                    : "text-slate-400 dark:text-slate-500"
+                }`}
+              >
+                <Icon className="h-6 w-6" />
+              </span>
+              <span className={active ? "text-brand-700 dark:text-brand-200" : "text-slate-400 dark:text-slate-500"}>
+                {label}
+              </span>
             </Link>
           );
         })}
