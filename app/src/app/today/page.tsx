@@ -6,6 +6,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { fmtRange } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
+import { CheckCircleIcon, PinIcon, PhoneIcon, NavigationIcon, PaperclipIcon } from "@/components/icons";
 
 type RunJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
 
@@ -67,8 +68,8 @@ export default function TodayPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Today</h1>
-        <p className="text-sm text-stone-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Today</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {today.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })} ·{" "}
           {jobs.length} job{jobs.length === 1 ? "" : "s"}
         </p>
@@ -82,9 +83,9 @@ export default function TodayPage() {
         </div>
       ) : jobs.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 px-6 py-12 text-center">
-          <span className="text-3xl">🎉</span>
-          <p className="font-semibold text-stone-800 dark:text-slate-100">Nothing on today</p>
-          <p className="text-sm text-stone-500 dark:text-slate-400">Confirmed jobs scheduled for today show up here.</p>
+          <CheckCircleIcon className="h-9 w-9 text-brand-500" />
+          <p className="font-semibold text-slate-800 dark:text-slate-100">Nothing on today</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Confirmed jobs scheduled for today show up here.</p>
           <Link href="/calendar" className="btn-secondary mt-2">Open calendar</Link>
         </div>
       ) : (
@@ -95,25 +96,25 @@ export default function TodayPage() {
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-brand-600 dark:text-brand-300">{fmtRange(job._segStart, job._segEnd)}</p>
                   <Link href={`/jobs/${job.id}`}>
-                    <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">
+                    <h3 className="truncate font-semibold text-slate-900 dark:text-slate-100">
                       {job.title}
                       {job._dayCount > 1 && (
-                        <span className="ml-1.5 text-xs font-normal text-stone-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+                        <span className="ml-1.5 text-xs font-normal text-slate-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
                       )}
                     </h3>
                   </Link>
-                  <p className="truncate text-sm text-stone-500 dark:text-slate-400">{job.clientName || "—"}</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">{job.clientName || "—"}</p>
                 </div>
                 <StatusPill status={job.status} />
               </div>
 
-              {job.address && <p className="mt-2 text-sm text-stone-600 dark:text-slate-300">📍 {job.address}</p>}
+              {job.address && <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><PinIcon className="h-4 w-4" /> {job.address}</p>}
 
               {/* Quick contact / nav / docs */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {job.clientPhone && (
-                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200">
-                    📞 Call
+                  <a href={`tel:${job.clientPhone}`} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
+                    <PhoneIcon className="h-4 w-4" /> Call
                   </a>
                 )}
                 {job.address && (
@@ -121,16 +122,16 @@ export default function TodayPage() {
                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200"
                   >
-                    🧭 Navigate
+                    <NavigationIcon className="h-4 w-4" /> Navigate
                   </a>
                 )}
                 {(job.documents || [])
                   .filter((d) => d.webViewLink)
                   .map((d) => (
-                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-stone-100 px-3 py-1.5 text-sm font-medium text-stone-700 dark:bg-night-800 dark:text-slate-200">
-                      📎 {d.name}
+                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1.5 truncate rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 dark:bg-night-800 dark:text-slate-200">
+                      <PaperclipIcon className="h-4 w-4 shrink-0" /> {d.name}
                     </a>
                   ))}
               </div>

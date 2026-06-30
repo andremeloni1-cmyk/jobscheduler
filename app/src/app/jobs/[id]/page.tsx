@@ -12,6 +12,7 @@ import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { quoteRef, fileMatchesRef } from "@/lib/refs";
+import { CheckIcon, DocumentIcon } from "@/components/icons";
 
 const NEXT_ACTIONS: Record<string, { status: string; label: string; style: string }[]> = {
   lead: [{ status: "accepted", label: "Confirm job", style: "btn-primary" }],
@@ -127,8 +128,8 @@ export default function JobDetailPage() {
     }
   }
 
-  if (loading) return <div className="px-4 pt-6 text-stone-400 dark:text-slate-500">Loading…</div>;
-  if (!job) return <div className="px-4 pt-6 text-stone-500 dark:text-slate-400">Job not found. <Link href="/" className="text-brand-600">Back</Link></div>;
+  if (loading) return <div className="px-4 pt-6 text-slate-400 dark:text-slate-500">Loading…</div>;
+  if (!job) return <div className="px-4 pt-6 text-slate-500 dark:text-slate-400">Job not found. <Link href="/" className="text-brand-600">Back</Link></div>;
 
   const actions = NEXT_ACTIONS[job.status] || [];
   const latestReport = job.reports?.[0] || null;
@@ -136,12 +137,12 @@ export default function JobDetailPage() {
   return (
     <div className="px-4 pt-5">
       {toast && (
-        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
           {toast}
         </div>
       )}
 
-      <Link href="/" className="mb-3 inline-flex items-center gap-1 text-sm text-stone-500 dark:text-slate-400">
+      <Link href="/" className="mb-3 inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" /></svg>
         All jobs
       </Link>
@@ -149,10 +150,10 @@ export default function JobDetailPage() {
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-xl font-bold text-stone-900 dark:text-slate-100">{job.title}</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{job.title}</h1>
           <StatusPill status={job.status} />
         </div>
-        <p className="mt-1 text-sm text-stone-500 dark:text-slate-400">{job.reference}</p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{job.reference}</p>
         {job.leadSource && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 dark:bg-brand-500/15 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300">
@@ -165,7 +166,7 @@ export default function JobDetailPage() {
               <button
                 onClick={rereadImages}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-night-800 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:text-slate-300 hover:bg-stone-200 dark:hover:bg-night-800 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-night-800 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-night-800 disabled:opacity-50"
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -195,26 +196,26 @@ export default function JobDetailPage() {
       </div>
 
       {/* Schedule + money card */}
-      <div className="card mb-3 divide-y divide-stone-100 dark:divide-night-line2">
+      <div className="card mb-3 divide-y divide-slate-100 dark:divide-night-line2">
         <Row icon="cal" label="Scheduled">
           {job.scheduledStart ? (
             <span>
               {fmtDay(job.scheduledStart)} · {fmtRange(job.scheduledStart, job.scheduledEnd)}
             </span>
           ) : (
-            <span className="text-stone-400 dark:text-slate-500">Not scheduled</span>
+            <span className="text-slate-400 dark:text-slate-500">Not scheduled</span>
           )}
         </Row>
         <Row icon="money" label="Value">{fmtMoney(job.quoteAmount, job.currency)}</Row>
         {job.googleEventId && (
           <Row icon="cal" label="Calendar">
-            <span className="text-emerald-600 dark:text-emerald-300">On Google Calendar ✓</span>
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-300">On Google Calendar <CheckIcon className="h-4 w-4" /></span>
           </Row>
         )}
       </div>
 
       {/* Client card */}
-      <div className="card mb-3 divide-y divide-stone-100 dark:divide-night-line2">
+      <div className="card mb-3 divide-y divide-slate-100 dark:divide-night-line2">
         <Row icon="user" label="Client">{job.clientName || "—"}</Row>
         {job.clientPhone && (
           <Row icon="phone" label="Phone">
@@ -238,7 +239,7 @@ export default function JobDetailPage() {
       {job.description && (
         <div className="card mb-3 p-4">
           <p className="label mb-1">Description</p>
-          <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-slate-200">{job.description}</p>
+          <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{job.description}</p>
         </div>
       )}
 
@@ -259,8 +260,8 @@ export default function JobDetailPage() {
               <ul className="space-y-2">
                 {shown.map((d) => (
                   <li key={d.id} className="flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
-                      <span>📄</span>
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                      <DocumentIcon className="h-4 w-4" />
                       <span className="truncate">{d.name}</span>
                     </span>
                     {d.webViewLink ? (
@@ -268,20 +269,20 @@ export default function JobDetailPage() {
                         Open
                       </a>
                     ) : (
-                      <span className="shrink-0 text-xs text-stone-400 dark:text-slate-500">{d.source}</span>
+                      <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">{d.source}</span>
                     )}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-stone-400 dark:text-slate-500">
+              <p className="text-sm text-slate-400 dark:text-slate-500">
                 No documents yet. Tap “Find in email” to pull job PDFs from Gmail into Google Drive.
               </p>
             )}
             {hidden > 0 && (
               <button
                 onClick={() => setShowAllDocs((s) => !s)}
-                className="mt-3 text-xs font-semibold text-stone-500 dark:text-slate-400"
+                className="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400"
               >
                 {showAllDocs ? "Show only this job’s documents" : `Show all documents (+${hidden} from other jobs)`}
               </button>
@@ -300,7 +301,7 @@ export default function JobDetailPage() {
         }
       >
         {latestReport && !showReport && (
-          <p className="text-sm text-stone-600 dark:text-slate-300">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             {latestReport.status === "sent" ? `Sent ${relativeTime(latestReport.sentAt)}` : "Draft saved"}
             {latestReport.webViewLink && (
               <>
@@ -313,7 +314,7 @@ export default function JobDetailPage() {
           </p>
         )}
         {!latestReport && !showReport && (
-          <p className="text-sm text-stone-400 dark:text-slate-500">Fill out a maintenance report and email it to the client as a PDF.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Fill out a maintenance report and email it to the client as a PDF.</p>
         )}
         {showReport && <ReportEditor job={job} existing={latestReport} onSaved={load} onClose={() => setShowReport(false)} />}
       </Section>
@@ -331,8 +332,8 @@ export default function JobDetailPage() {
               <li key={a.id} className="flex gap-3 text-sm">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400" />
                 <div>
-                  <p className="text-stone-700 dark:text-slate-200">{a.message}</p>
-                  <p className="text-xs text-stone-400 dark:text-slate-500">{relativeTime(a.createdAt)}</p>
+                  <p className="text-slate-700 dark:text-slate-200">{a.message}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{relativeTime(a.createdAt)}</p>
                 </div>
               </li>
             ))}
@@ -350,7 +351,7 @@ export default function JobDetailPage() {
             <button className="btn-danger" disabled={busy} onClick={remove}>
               {busy ? "Deleting…" : "Confirm delete"}
             </button>
-            <button className="btn-ghost text-stone-500 dark:text-slate-400" disabled={busy} onClick={() => setConfirmDelete(false)}>
+            <button className="btn-ghost text-slate-500 dark:text-slate-400" disabled={busy} onClick={() => setConfirmDelete(false)}>
               Cancel
             </button>
           </>
@@ -361,7 +362,7 @@ export default function JobDetailPage() {
         )}
       </div>
       {confirmDelete && (
-        <p className="mt-2 text-right text-xs text-stone-400 dark:text-slate-500">Removes its calendar event. You can restore it for 30 days from Settings → Recently deleted.</p>
+        <p className="mt-2 text-right text-xs text-slate-400 dark:text-slate-500">Removes its calendar event. You can restore it for 30 days from Settings → Recently deleted.</p>
       )}
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit job">
@@ -377,7 +378,7 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   return (
     <div className="card mb-3 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-semibold text-stone-900 dark:text-slate-100">{title}</h2>
+        <h2 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
         {action}
       </div>
       {children}
@@ -388,9 +389,9 @@ function Section({ title, action, children }: { title: string; action?: React.Re
 function Row({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
-      <span className="text-stone-400 dark:text-slate-500"><RowIcon name={icon} /></span>
-      <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-slate-500">{label}</span>
-      <span className="min-w-0 flex-1 text-sm text-stone-800 dark:text-slate-100">{children}</span>
+      <span className="text-slate-400 dark:text-slate-500"><RowIcon name={icon} /></span>
+      <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</span>
+      <span className="min-w-0 flex-1 text-sm text-slate-800 dark:text-slate-100">{children}</span>
     </div>
   );
 }

@@ -46,25 +46,25 @@ export function WorkloadCard({ jobs }: { jobs: JobDTO[] }) {
 
   return (
     <details className="card mb-3 p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-stone-700 dark:text-slate-200">
+      <summary className="cursor-pointer text-sm font-semibold text-slate-700 dark:text-slate-200">
         Workload — next {WEEKS} weeks
       </summary>
       <ul className="mt-2 space-y-2">
         {weeks.map((w) => (
           <li key={w.start.toISOString()} className="flex items-center gap-3">
-            <span className="w-16 shrink-0 text-xs font-medium text-stone-500 dark:text-slate-400">
+            <span className="w-16 shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400">
               {w.start.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
             </span>
-            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100 dark:bg-night-800">
+            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-night-800">
               <div className={`h-full rounded-full ${barColor(w.pct)}`} style={{ width: `${w.pct}%` }} />
             </div>
-            <span className="w-24 shrink-0 text-right text-xs text-stone-400 dark:text-slate-500">
+            <span className="w-24 shrink-0 text-right text-xs text-slate-400 dark:text-slate-500">
               {w.pct}% · {w.jobCount} job{w.jobCount === 1 ? "" : "s"}
             </span>
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-[11px] text-stone-400 dark:text-slate-500">Based on a 5-day work week ({WORKDAY_MINS} min/day).</p>
+      <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Based on a 5-day work week ({WORKDAY_MINS} min/day).</p>
     </details>
   );
 }

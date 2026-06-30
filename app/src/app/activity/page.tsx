@@ -4,6 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/job";
 import { relativeTime } from "@/lib/format";
+import {
+  InboxIcon,
+  CalendarIcon,
+  PaperclipIcon,
+  MailIcon,
+  DocumentIcon,
+  RefreshIcon,
+  SparkleIcon,
+  NoteIcon,
+} from "@/components/icons";
 
 type Activity = {
   id: string;
@@ -13,15 +23,15 @@ type Activity = {
   job?: { id: string; title: string; reference: string } | null;
 };
 
-const ICON: Record<string, string> = {
-  scan: "📨",
-  calendar: "🗓",
-  drive: "📎",
-  email: "✉️",
-  report: "📄",
-  status_change: "🔄",
-  lead: "🆕",
-  note: "📝",
+const ICON: Record<string, (p: { className?: string }) => React.JSX.Element> = {
+  scan: InboxIcon,
+  calendar: CalendarIcon,
+  drive: PaperclipIcon,
+  email: MailIcon,
+  report: DocumentIcon,
+  status_change: RefreshIcon,
+  lead: SparkleIcon,
+  note: NoteIcon,
 };
 
 function dayLabel(d: Date): string {
@@ -64,8 +74,8 @@ export default function ActivityPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Activity</h1>
-        <p className="text-sm text-stone-500 dark:text-slate-400">What the app did automatically — scans, calendar, emails, files.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Activity</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">What the app did automatically — scans, calendar, emails, files.</p>
       </header>
 
       {loading ? (
@@ -75,19 +85,21 @@ export default function ActivityPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="card px-6 py-12 text-center text-sm text-stone-400 dark:text-slate-500">Nothing logged yet.</div>
+        <div className="card px-6 py-12 text-center text-sm text-slate-400 dark:text-slate-500">Nothing logged yet.</div>
       ) : (
         <div className="space-y-5">
           {groups.map(([label, acts]) => (
             <div key={label}>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-400 dark:text-slate-500">{label}</h2>
-              <div className="card divide-y divide-stone-100 dark:divide-night-line2">
-                {acts.map((a) => (
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</h2>
+              <div className="card divide-y divide-slate-100 dark:divide-night-line2">
+                {acts.map((a) => {
+                  const Ico = ICON[a.type] ?? NoteIcon;
+                  return (
                   <div key={a.id} className="flex items-start gap-3 px-3.5 py-2.5">
-                    <span className="mt-0.5 text-base">{ICON[a.type] || "•"}</span>
+                    <Ico className="mt-0.5 h-5 w-5 text-slate-400 dark:text-slate-500" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-stone-800 dark:text-slate-100">{a.message}</p>
-                      <p className="mt-0.5 text-xs text-stone-400 dark:text-slate-500">
+                      <p className="text-sm text-slate-800 dark:text-slate-100">{a.message}</p>
+                      <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
                         {a.job ? (
                           <Link href={`/jobs/${a.job.id}`} className="font-medium text-brand-600 dark:text-brand-300">
                             {a.job.title}
@@ -99,7 +111,8 @@ export default function ActivityPage() {
                       </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}

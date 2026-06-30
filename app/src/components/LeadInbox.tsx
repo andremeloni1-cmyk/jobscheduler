@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, type JobDTO } from "@/lib/job";
 import { fmtDay, fmtRange } from "@/lib/format";
 import { WORKDAY_MINS } from "@/lib/schedule";
+import { CalendarIcon, WrenchIcon, PinIcon } from "@/components/icons";
 
 /** Estimated whole working days for a job, from its AI-detected duration. */
 function workingDays(durationMins: number): number {
@@ -53,7 +54,7 @@ export function LeadInbox({
   return (
     <section className="mb-5">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-stone-700 dark:text-slate-200">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-xs font-bold text-white">
             {leads.length}
           </span>
@@ -72,32 +73,32 @@ export function LeadInbox({
                 <span className="rounded-md bg-brand-50 dark:bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:text-brand-300">
                   New
                 </span>
-                <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">{job.title}</h3>
+                <h3 className="truncate font-semibold text-slate-900 dark:text-slate-100">{job.title}</h3>
               </div>
-              <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-slate-400">
+              <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">
                 From {job.clientName || job.leadSource}
-                {job.documents && job.documents.length > 0 ? ` · 📎 ${job.documents.length}` : ""}
+                {job.documents && job.documents.length > 0 ? ` · ${job.documents.length}` : ""}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {job.scheduledStart ? (
                   <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    🗓 {fmtDay(job.scheduledStart)} · {fmtRange(job.scheduledStart, job.scheduledEnd)}
+                    <CalendarIcon className="h-3.5 w-3.5" /> {fmtDay(job.scheduledStart)} · {fmtRange(job.scheduledStart, job.scheduledEnd)}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center rounded-md bg-stone-100 dark:bg-night-800 px-2 py-0.5 text-xs text-stone-500 dark:text-slate-400">No date — set after approving</span>
+                  <span className="inline-flex items-center rounded-md bg-slate-100 dark:bg-night-800 px-2 py-0.5 text-xs text-slate-500 dark:text-slate-400">No date — set after approving</span>
                 )}
                 {workingDays(job.durationMins) >= 2 && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 dark:bg-violet-500/15 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-300">
-                    🛠 {workingDays(job.durationMins)} working days
+                    <WrenchIcon className="h-3.5 w-3.5" /> {workingDays(job.durationMins)} working days
                   </span>
                 )}
                 {job.address && (
-                  <span className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-stone-100 dark:bg-night-800 px-2 py-0.5 text-xs text-stone-500 dark:text-slate-400">
-                    📍 {job.address}
+                  <span className="inline-flex max-w-full items-center gap-1 truncate rounded-md bg-slate-100 dark:bg-night-800 px-2 py-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <PinIcon className="h-3.5 w-3.5" /> {job.address}
                   </span>
                 )}
               </div>
-              {job.description && <p className="mt-1.5 line-clamp-2 text-xs text-stone-400 dark:text-slate-500">{job.description}</p>}
+              {job.description && <p className="mt-1.5 line-clamp-2 text-xs text-slate-400 dark:text-slate-500">{job.description}</p>}
             </Link>
             <div className="mt-3 flex gap-2">
               <button className="btn-primary flex-1 py-2" disabled={busyId === job.id} onClick={() => approve(job)}>

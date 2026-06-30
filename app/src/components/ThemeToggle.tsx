@@ -30,7 +30,7 @@ export function ThemeToggle() {
   }
 
   return (
-    <div className="inline-flex rounded-xl bg-stone-100 p-1 dark:bg-night-850">
+    <div className="inline-flex rounded-xl bg-slate-100 p-1 dark:bg-night-850">
       {OPTS.map((o) => (
         <button
           key={o.k}
@@ -38,8 +38,8 @@ export function ThemeToggle() {
           onClick={() => pick(o.k)}
           className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
             choice === o.k
-              ? "bg-white text-stone-900 shadow-sm dark:bg-night-900 dark:text-white"
-              : "text-stone-500 hover:text-stone-700 dark:text-slate-400 dark:hover:text-slate-200"
+              ? "bg-white text-slate-900 shadow-sm dark:bg-night-900 dark:text-white"
+              : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
         >
           {o.label}

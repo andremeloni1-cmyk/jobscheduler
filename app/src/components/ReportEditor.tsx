@@ -171,12 +171,12 @@ export function ReportEditor({
               key={t.key}
               type="button"
               onClick={() => addTemplate(t.key)}
-              className="rounded-lg bg-stone-100 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-slate-200 hover:bg-stone-200 dark:hover:bg-night-800"
+              className="rounded-lg bg-slate-100 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-night-800"
             >
               + {t.label}
             </button>
           ))}
-          <button type="button" onClick={addRoom} className="rounded-lg bg-stone-100 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-slate-200 hover:bg-stone-200 dark:hover:bg-night-800">
+          <button type="button" onClick={addRoom} className="rounded-lg bg-slate-100 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-night-800">
             + Blank room
           </button>
         </div>
@@ -189,7 +189,7 @@ export function ReportEditor({
 
       {/* Rooms with completion checklist */}
       {rooms.length === 0 ? (
-        <p className="text-xs text-stone-400 dark:text-slate-500">Add a room above (or use Auto-fill) to build a completion checklist.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">Add a room above (or use Auto-fill) to build a completion checklist.</p>
       ) : (
         <div className="space-y-3">
           {rooms.map((room, ri) => {
@@ -197,7 +197,7 @@ export function ReportEditor({
             const done = items.filter((it) => it.done).length;
             const outstanding = items.length - done;
             return (
-              <div key={ri} className="rounded-xl bg-stone-50 dark:bg-night-850 p-3 ring-1 ring-inset ring-stone-200 dark:ring-night-line">
+              <div key={ri} className="rounded-xl bg-slate-50 dark:bg-night-850 p-3 ring-1 ring-inset ring-slate-200 dark:ring-night-line">
                 <div className="mb-2 flex items-center gap-2">
                   <input
                     className="input flex-1"
@@ -205,7 +205,7 @@ export function ReportEditor({
                     value={room.name}
                     onChange={(e) => setRoom(ri, { name: e.target.value })}
                   />
-                  <button type="button" onClick={() => removeRoom(ri)} className="rounded-lg p-1.5 text-stone-400 dark:text-slate-500 hover:bg-stone-200 dark:hover:bg-night-800" aria-label="Remove room">
+                  <button type="button" onClick={() => removeRoom(ri)} className="rounded-lg p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-night-800" aria-label="Remove room">
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
                     </svg>
@@ -213,7 +213,7 @@ export function ReportEditor({
                 </div>
 
                 {items.length > 0 && (
-                  <p className="mb-1.5 text-xs font-medium text-stone-500 dark:text-slate-400">
+                  <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                     {done}/{items.length} complete
                     {outstanding > 0 && <span className="text-amber-600 dark:text-amber-300"> · {outstanding} to do</span>}
                   </p>
@@ -229,12 +229,12 @@ export function ReportEditor({
                         className="h-5 w-5 shrink-0 rounded accent-emerald-600"
                       />
                       <input
-                        className={`input flex-1 ${it.done ? "text-stone-400 dark:text-slate-500 line-through" : ""}`}
+                        className={`input flex-1 ${it.done ? "text-slate-400 dark:text-slate-500 line-through" : ""}`}
                         value={it.label}
                         placeholder="Checklist item"
                         onChange={(e) => setItem(ri, ii, { label: e.target.value })}
                       />
-                      <button type="button" onClick={() => removeItem(ri, ii)} className="rounded-lg p-1 text-stone-400 dark:text-slate-500 hover:bg-stone-200 dark:hover:bg-night-800" aria-label="Remove item">
+                      <button type="button" onClick={() => removeItem(ri, ii)} className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-night-800" aria-label="Remove item">
                         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
                         </svg>
@@ -278,15 +278,15 @@ export function ReportEditor({
           </button>
         )}
         {job.drivePhotosFolderId && data.driveImagesLink === photosFolderLink && (
-          <p className="mt-1 text-xs text-stone-400 dark:text-slate-500">
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             Linked to this job’s uploaded photos — clients can view them from the report.
           </p>
         )}
       </div>
 
       {/* Maintenance details — optional */}
-      <details className="rounded-xl border border-stone-200 dark:border-night-line">
-        <summary className="cursor-pointer px-3 py-2.5 text-sm font-semibold text-stone-700 dark:text-slate-200">Maintenance details (optional)</summary>
+      <details className="rounded-xl border border-slate-200 dark:border-night-line">
+        <summary className="cursor-pointer px-3 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">Maintenance details (optional)</summary>
         <div className="space-y-2 px-3 pb-3">
           {MAINT_FIELDS.map((f) => (
             <div key={f.key}>
@@ -320,7 +320,7 @@ export function ReportEditor({
         </div>
       </div>
 
-      {msg && <p className="rounded-lg bg-stone-100 dark:bg-night-800 px-3 py-2 text-sm text-stone-700 dark:text-slate-200">{msg}</p>}
+      {msg && <p className="rounded-lg bg-slate-100 dark:bg-night-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{msg}</p>}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button className="btn-secondary" disabled={!!busy} onClick={() => run("save")}>

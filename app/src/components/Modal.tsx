@@ -77,7 +77,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal>
       <div
-        className={`absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 bg-slate-900/55 backdrop-blur-sm transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
       />
       <div
@@ -94,8 +94,8 @@ export function Modal({
           <span className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-night-line" />
         </div>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-stone-900 dark:text-slate-100">{title}</h2>
-          <button onClick={onClose} className="rounded-full p-1.5 text-stone-400 dark:text-slate-500 hover:bg-stone-100 dark:hover:bg-night-800" aria-label="Close">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h2>
+          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-night-800" aria-label="Close">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
             </svg>
