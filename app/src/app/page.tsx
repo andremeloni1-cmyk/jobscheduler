@@ -173,7 +173,7 @@ export default function DashboardPage() {
       {/* Today's run sheet shortcut */}
       <Link
         href="/today"
-        className="mb-4 flex items-center justify-between rounded-2xl bg-brand-600 px-4 py-3.5 text-white shadow-sm transition active:scale-[0.99]"
+        className="mb-4 flex items-center justify-between rounded-bento bg-brand-600 px-5 py-4 text-white shadow-bento transition active:scale-[0.99]"
       >
         <div>
           <p className="text-sm font-semibold">Today’s run sheet</p>
@@ -224,6 +224,7 @@ export default function DashboardPage() {
         <Stat label="Active" value={String(counts.active)} />
         <Stat label="Scheduled" value={String(counts.scheduled)} />
         <Stat
+          dark
           label="Value"
           value={new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(counts.value)}
         />
@@ -264,7 +265,7 @@ export default function DashboardPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              filter === f ? "bg-brand-600 text-white" : "bg-white dark:bg-night-900 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-night-line"
+              filter === f ? "bg-ink text-white dark:bg-white dark:text-ink" : "bg-white dark:bg-night-900 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-night-line"
             }`}
           >
             {f === "active" ? "Active" : STATUS_LABELS[f as keyof typeof STATUS_LABELS]}
@@ -276,7 +277,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-28 skeleton rounded-2xl" />
+            <div key={i} className="h-28 skeleton rounded-bento" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -312,11 +313,11 @@ export default function DashboardPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
   return (
-    <div className="card px-3 py-3 text-center">
-      <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{value}</div>
-      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+    <div className={`${dark ? "card-dark" : "card"} px-3 py-4 text-center`}>
+      <div className={`font-display text-xl font-bold ${dark ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>{value}</div>
+      <div className={`eyebrow mt-1 ${dark ? "text-slate-400" : ""}`}>{label}</div>
     </div>
   );
 }
