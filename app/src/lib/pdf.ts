@@ -34,10 +34,10 @@ type Meta = {
 };
 
 // Brand palette — black & white with a warm orange accent (matches the app).
-const INK = rgb(0.067, 0.067, 0.067); // #111
-const ACCENT = rgb(0.886, 0.373, 0.110); // orange #e25f1c
-const MUTED = rgb(0.45, 0.45, 0.47);
-const HAIRLINE = rgb(0.88, 0.88, 0.9);
+const INK = rgb(0.09, 0.09, 0.09); // #171717
+const ACCENT = rgb(0.949, 0.337, 0.169); // orange #F25623
+const MUTED = rgb(0.302, 0.302, 0.302); // #4D4D4D
+const HAIRLINE = rgb(0.871, 0.871, 0.871); // #DEDEDE
 const LINKC = rgb(0.13, 0.39, 0.78);
 const WHITE = rgb(1, 1, 1);
 

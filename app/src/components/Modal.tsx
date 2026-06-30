@@ -81,7 +81,7 @@ export function Modal({
         onClick={onClose}
       />
       <div
-        className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white dark:bg-night-900 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl dark:shadow-none sm:max-h-[85vh] sm:rounded-3xl"
+        className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white/90 dark:bg-night-900/90 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-glass dark:shadow-glass-dark sm:max-h-[85vh] sm:rounded-3xl"
         style={sheetStyle}
       >
         {/* Drag handle (mobile bottom-sheet) — drag down to dismiss. */}

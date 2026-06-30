@@ -19,12 +19,26 @@ body {
   }
 }
 
-/* Muted neutral "table" the bento cards float on. */
+/* Soft neutral gradient "table" the frosted cards float on — a calm light-gray
+   wash (palette #DEDEDE) lifting toward white, with a faint warm orange bloom in
+   one corner so the accent quietly tints the glass. */
 body {
-  @apply bg-slate-100 text-slate-800 antialiased;
+  @apply text-slate-800 antialiased;
+  background-color: #e6e6e6;
+  background-image:
+    radial-gradient(120% 80% at 100% 0%, rgba(242, 86, 35, 0.07) 0%, rgba(242, 86, 35, 0) 45%),
+    radial-gradient(100% 70% at 0% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(160deg, #ededed 0%, #dedede 55%, #d4d4d4 100%);
+  background-attachment: fixed;
 }
 html.dark body {
-  @apply bg-night-950 text-slate-200;
+  @apply text-slate-200;
+  background-color: #0d0d0d;
+  background-image:
+    radial-gradient(120% 80% at 100% 0%, rgba(242, 86, 35, 0.1) 0%, rgba(242, 86, 35, 0) 45%),
+    radial-gradient(90% 60% at 0% 0%, rgba(77, 77, 77, 0.25) 0%, rgba(77, 77, 77, 0) 55%),
+    linear-gradient(160deg, #1a1a1a 0%, #121212 55%, #0d0d0d 100%);
+  background-attachment: fixed;
 }
 
 ::selection {
@@ -118,12 +132,12 @@ html.dark {
   100% { background-position: -200% 0; }
 }
 .skeleton {
-  background-image: linear-gradient(100deg, #e2e8f0 30%, #f8fafc 50%, #e2e8f0 70%);
+  background-image: linear-gradient(100deg, #dedede 30%, #f2f2f2 50%, #dedede 70%);
   background-size: 200% 100%;
   animation: shimmer 1.3s linear infinite;
 }
 html.dark .skeleton {
-  background-image: linear-gradient(100deg, #1c1c1c 30%, #2a2a2a 50%, #1c1c1c 70%);
+  background-image: linear-gradient(100deg, #1f1f1f 30%, #2c2c2c 50%, #1f1f1f 70%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -188,9 +202,24 @@ a {
       dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25;
   }
 
+  /* ---- Frosted glass -------------------------------------------------- */
+  /* Reusable frosted panel: translucent surface + blur + crisp 1px rim, so it
+     reads as glass floating on the gradient table. The backdrop-blur gives the
+     "frosted" look from the reference. */
+  .glass {
+    @apply bg-white/65 backdrop-blur-xl ring-1 ring-inset ring-white/60 shadow-glass
+      dark:bg-night-900/55 dark:ring-white/10 dark:shadow-glass-dark;
+  }
+
   /* ---- Bento surfaces ------------------------------------------------- */
-  /* Standard tile: large radius, soft lifted shadow, no hairline ring. */
+  /* Standard tile: frosted glass with large radius. Everything uses this, so the
+     whole app picks up the frosted look in one place. */
   .card {
+    @apply rounded-bento glass p-5 transition duration-200 ease-out;
+  }
+  /* Opaque variant — for surfaces that sit on top of other glass (menus,
+     sheets) where stacked translucency would muddy the text. */
+  .card-solid {
     @apply rounded-bento bg-white p-5 shadow-bento transition duration-200 ease-out
       dark:bg-night-900 dark:shadow-none dark:ring-1 dark:ring-night-line;
   }
@@ -198,10 +227,10 @@ a {
   .tap {
     @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift active:translate-y-0 active:scale-[0.985];
   }
-  /* Pale-teal accent tile (the "hero" card). */
+  /* Pale-orange accent tile (the "hero" card) — tinted frosted glass. */
   .card-hero {
-    @apply rounded-bento bg-brand-100 p-5 text-brand-950
-      dark:bg-brand-500/10 dark:text-brand-50 dark:ring-1 dark:ring-brand-500/20;
+    @apply rounded-bento bg-brand-100/70 backdrop-blur-xl p-5 text-brand-950 ring-1 ring-inset ring-white/50 shadow-glass
+      dark:bg-brand-500/12 dark:text-brand-50 dark:ring-brand-500/20 dark:shadow-glass-dark;
   }
   /* Dark accent tile for emphasis (stats / revenue) — dark in both themes. */
   .card-dark {
@@ -219,8 +248,8 @@ a {
 
   /* ---- Forms --------------------------------------------------------- */
   .input {
-    @apply w-full rounded-2xl border-0 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none
-      dark:bg-night-850 dark:text-slate-100 dark:ring-night-line dark:placeholder:text-slate-500 dark:focus:bg-night-850;
+    @apply w-full rounded-2xl border-0 bg-white/60 backdrop-blur px-4 py-2.5 text-sm text-slate-900 ring-1 ring-inset ring-white/70 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 outline-none
+      dark:bg-night-850/70 dark:text-slate-100 dark:ring-night-line dark:placeholder:text-slate-500 dark:focus:bg-night-850;
   }
   .label {
     @apply block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5 dark:text-slate-400;
