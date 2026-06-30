@@ -25,11 +25,12 @@ export async function POST(req: Request) {
     const result = await scanForLeads({ force, sinceDays: force ? 30 : 14 });
 
     // Notify subscribed devices when the (especially scheduled) scan turns up work.
-    if (result.connected && (result.created > 0 || result.flagged > 0)) {
+    if (result.connected && (result.created > 0 || result.flagged > 0 || result.removed > 0)) {
       const parts: string[] = [];
       if (result.created) parts.push(`${result.created} new to confirm`);
       if (result.plans) parts.push(`${result.plans} plans arrived`);
       if (result.flagged) parts.push(`${result.flagged} to review`);
+      if (result.removed) parts.push(`${result.removed} auto-removed`);
       await sendPush({ title: "JoineryFlow — inbox checked", body: parts.join(" · "), url: "/" }).catch(() => {});
     }
 

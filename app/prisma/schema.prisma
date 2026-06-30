@@ -78,6 +78,11 @@ model Job {
   // Review flag set by intake reconciliation (e.g. "review" = the job's company
   // sent a weekly email that no longer lists it — possibly moved/cancelled).
   flag           String?
+  // How many distinct company emails in a row have omitted this job, plus the id
+  // of the last email counted (so re-scanning the same email doesn't double-count).
+  // Two misses on a job that's on Google Calendar → assume cancelled & soft-delete.
+  reviewMisses    Int     @default(0)
+  reviewMessageId String?
 
   // Google links
   googleEventId  String?  // primary calendar event (first working day)

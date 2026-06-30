@@ -120,13 +120,14 @@ export default function DashboardPage() {
     try {
       // force=1: re-check emails even if a previous scan already saw them (so a
       // dismissed lead can be re-imported, and fixes apply to old emails).
-      const res = await api<{ created: number; connected: boolean; flagged?: number; plans?: number }>("/api/leads/scan?force=1", { method: "POST" });
+      const res = await api<{ created: number; connected: boolean; flagged?: number; plans?: number; removed?: number }>("/api/leads/scan?force=1", { method: "POST" });
       if (!res.connected) flash("Connect Google in Settings to check your inbox.");
       else {
         const parts: string[] = [];
         if (res.created) parts.push(`${res.created} new to confirm`);
         if (res.plans) parts.push(`${res.plans} plans arrived`);
         if (res.flagged) parts.push(`${res.flagged} to review`);
+        if (res.removed) parts.push(`${res.removed} auto-removed`);
         flash(parts.length ? `Inbox checked — ${parts.join(" · ")}` : "No changes in your inbox");
       }
       await load();
