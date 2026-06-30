@@ -14,6 +14,18 @@ builder is built (Phase 2).
 - **Units**: `each` (count), `metre` (qty = linear metres), `fixed` (1 × price).
 - Rates are **editable presets** — a job can override a line if needed.
 
-## Companies
-- [`mii-kitchens.md`](mii-kitchens.md) — Mii Kitchens (builder). ✅ captured from INV-0244.
+## Your business (sender)
+- [`_business.md`](_business.md) — andre meloni photography (ABN, bank, remit-to).
+
+## Companies (customers)
+- [`mii-kitchens.md`](mii-kitchens.md) — Mii Kitchens (builder). ✅ INV-0244.
+- [`harrington-kitchens.md`](harrington-kitchens.md) — Harrington Kitchens. ✅ INV-0230.
+- [`peter.md`](peter.md) — Ingenuity joinery (Peter). ✅ INV-0239.
 - _more to come as invoices are supplied (one file per company)._
+
+All current companies are **joinery companies the owner subcontracts for**
+(trade/B2B), each with its own rate card — cabinet tiers, per-item vs per-metre,
+handle rates, and due terms all vary, confirming rate cards must be **per
+company**. (A separate **direct-client** tier — homeowner-direct jobs, e.g.
+cabinets $50/$55 — would be its own card if/when needed; none of the current
+three are direct clients.)

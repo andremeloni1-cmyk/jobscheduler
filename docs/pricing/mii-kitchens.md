@@ -1,6 +1,6 @@
 # Mii Kitchens — rate card
 
-- **Type:** builder
+- **Type:** trade — joinery company you subcontract for
 - **Due terms:** 14 days
 - **GST:** exclusive (+10% on top)
 - **Source:** INV-0244 (QU3190), confirmed line-by-line.
