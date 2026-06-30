@@ -30,5 +30,6 @@
 - Cabinets **$50 standard / $70 tall** (and $70 for appliance / integrated-fridge
   cabinets). Handles **$1/each** (cheaper than Peter's $2).
 - "Scribed bulkhead" billed by count here (qty × $12) — confirm if it's per-metre.
-- Job lines were prefixed "Hauville …" (the kitchen/range name) rather than a QU
-  number — confirm how Harrington jobs should be referenced on invoice lines.
+- **Job reference = "Hauville" name** — that's Harrington's equivalent of a QU
+  number (how they track their jobs), so Harrington invoice lines are prefixed
+  with the Hauville reference, not a QU. (Job-reference style is per company.)

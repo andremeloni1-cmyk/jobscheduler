@@ -5,16 +5,17 @@
 - **GST:** exclusive (+10% on top)
 - **Source:** INV-0244 (QU3190), confirmed line-by-line.
 
-> Cabinet rates below are **builder** rates. For **direct-client** jobs the
-> standard cabinet is **$50** and tall is **$55** (a separate "direct client"
-> card; the rest of the items TBC per company).
+> **Mii has a per-job rate toggle.** Mii Kitchens jobs are either **builder** or
+> **client**, decided per job — the invoice builder needs a **builder/client
+> toggle** for Mii that switches the cabinet rates below. (Other companies seen
+> so far are single-tier.)
 
-## Cabinets — `each`
-| Item | Rate |
-|---|---|
-| Standard cabinet | $45 |
-| Tall cabinet | $50 |
-| Floating shelf | $25 |
+## Cabinets — `each` (toggle: builder / client)
+| Item | Builder | Client |
+|---|---|---|
+| Standard cabinet | $45 | $50 |
+| Tall cabinet | $50 | $55 |
+| Floating shelf | $25 | $25 (confirm) |
 
 ## Linear — `metre` (qty = metres)
 | Item | Rate |
