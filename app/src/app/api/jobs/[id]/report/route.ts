@@ -71,6 +71,10 @@ export async function POST(req: Request, { params }: Params) {
         clientName: job.clientName,
         address: job.address,
         ownerName: account?.name,
+        ownerPhone: account?.phone,
+        ownerEmail: account?.email,
+        logo: account?.logo,
+        logoMime: account?.logoMime,
       },
       data
     );
