@@ -105,6 +105,7 @@ model Job {
   activities   Activity[]
 
   notes        String?
+  checklist    String?  // JSON array of {id,text,done} — the job's on-site to-do list
   deletedAt    DateTime? // soft delete — hidden from lists, restorable for 30 days
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

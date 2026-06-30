@@ -9,6 +9,7 @@ import { JobForm } from "@/components/JobForm";
 import { ReportEditor } from "@/components/ReportEditor";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { PdfUpload } from "@/components/PdfUpload";
+import { JobChecklist } from "@/components/JobChecklist";
 import { RescheduleModal } from "@/components/RescheduleModal";
 import { fmtMoney, fmtDay, fmtRange, relativeTime } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
@@ -242,6 +243,22 @@ export default function JobDetailPage() {
           <p className="label mb-1">Description</p>
           <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{job.description}</p>
         </div>
+      )}
+
+      {/* On-site to-do list — front-and-centre while the job is active. */}
+      {(["accepted", "scheduled", "in_progress"].includes(job.status) || (job.checklist?.length ?? 0) > 0) && (
+        <Section
+          title="To-do list"
+          action={
+            job.status === "in_progress" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-500" /> In progress
+              </span>
+            ) : undefined
+          }
+        >
+          <JobChecklist job={job} onMessage={flash} />
+        </Section>
       )}
 
       {/* Documents — by default show this job's own files (its quote number,

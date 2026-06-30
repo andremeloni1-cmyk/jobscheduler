@@ -26,12 +26,19 @@ export interface JobDTO {
   gmailMessageId?: string | null;
   flag?: string | null;
   notes?: string | null;
+  checklist?: ChecklistItem[]; // on-site to-do list (server parses from JSON)
   deletedAt?: string | null;
   createdAt?: string;
   documents?: DocumentDTO[];
   reports?: ReportDTO[];
   activities?: ActivityDTO[];
   _count?: { reports: number };
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
 }
 
 export interface DocumentDTO {

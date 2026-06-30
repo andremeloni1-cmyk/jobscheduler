@@ -3,6 +3,7 @@ import { json, parseDate } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { onStatusChange, onReschedule, removeCalendar } from "@/lib/automations";
 import { companyResolver } from "@/lib/company";
+import { parseChecklist, serializeChecklist } from "@/lib/checklist";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export async function GET(_req: Request, { params }: Params) {
   });
   if (!job) return json({ error: "not found" }, 404);
   const resolve = await companyResolver();
-  return json({ job: { ...job, companyName: resolve(job) } });
+  return json({ job: { ...job, companyName: resolve(job), checklist: parseChecklist(job.checklist) } });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
@@ -38,6 +39,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if ("durationMins" in body) data.durationMins = Number(body.durationMins) || existing.durationMins;
   if ("flag" in body) data.flag = body.flag || null; // clear/set the review flag
   if ("companyId" in body) data.companyId = body.companyId || null;
+  if ("checklist" in body) data.checklist = serializeChecklist(body.checklist);
 
   const timeChanged =
     ("scheduledStart" in body || "scheduledEnd" in body);
