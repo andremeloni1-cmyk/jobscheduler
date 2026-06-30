@@ -10,6 +10,7 @@ import { fmtRange, fmtDay } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, jobEnd, WORKDAY_MINS } from "@/lib/schedule";
 import { companyPalette, companyLabel, companyKeyOf } from "@/lib/colors";
+import { PaperclipIcon } from "@/components/icons";
 
 // A job rendered on a particular day, carrying that day's working segment.
 type DayJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
@@ -194,15 +195,15 @@ export default function CalendarPage() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-slate-100">Calendar</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Calendar</h1>
         {/* Mode toggle */}
-        <div className="flex rounded-xl bg-stone-100 p-1 text-sm font-semibold dark:bg-night-800">
+        <div className="flex rounded-xl bg-slate-100 p-1 text-sm font-semibold dark:bg-night-800">
           {(["month", "week"] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
               className={`rounded-lg px-3 py-1 capitalize transition ${
-                mode === m ? "bg-white text-brand-700 shadow-sm dark:bg-night-900 dark:text-brand-300" : "text-stone-500 dark:text-slate-400"
+                mode === m ? "bg-white text-brand-700 shadow-sm dark:bg-night-900 dark:text-brand-300" : "text-slate-500 dark:text-slate-400"
               }`}
             >
               {m}
@@ -220,7 +221,7 @@ export default function CalendarPage() {
       {companies.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1.5">
           {companies.map((c) => (
-            <span key={c.label} className="inline-flex items-center gap-1.5 text-xs text-stone-500 dark:text-slate-400">
+            <span key={c.label} className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <span className={`h-2.5 w-2.5 rounded-full ${c.swatch}`} />
               {c.label}
             </span>
@@ -238,7 +239,7 @@ export default function CalendarPage() {
           Couldn’t load your Google Calendar: {calStatus.error}. Make sure the Calendar API is enabled, then try Disconnect &amp; Connect in Settings.
         </div>
       ) : (
-        <div className="mb-3 flex items-center gap-2 text-xs text-stone-400 dark:text-slate-500">
+        <div className="mb-3 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
           <span className="h-2 w-2 rounded-full bg-sky-400" />
           {external.length > 0
             ? `${external.length} event${external.length > 1 ? "s" : ""} from your Google Calendar shown in this range`
@@ -249,12 +250,12 @@ export default function CalendarPage() {
       {/* Summary of your Google Calendar events in this range */}
       {calStatus.connected && external.length > 0 && (
         <details className="card mb-3 p-3" open>
-          <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-stone-700 dark:text-slate-200">
+          <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-200">
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-sky-400" />
               Your calendar — {external.length} event{external.length > 1 ? "s" : ""}
             </span>
-            <span className="text-xs font-normal text-stone-400 dark:text-slate-500">this {mode}</span>
+            <span className="text-xs font-normal text-slate-400 dark:text-slate-500">this {mode}</span>
           </summary>
           <ul className="mt-2 max-h-56 space-y-1.5 overflow-y-auto">
             {[...external]
@@ -264,8 +265,8 @@ export default function CalendarPage() {
                   <span className="w-28 shrink-0 text-xs font-medium text-sky-700 dark:text-sky-300">
                     {new Date(e.start).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
                   </span>
-                  <span className="w-12 shrink-0 text-xs text-stone-400 dark:text-slate-500">{externalLabel(e)}</span>
-                  <span className="min-w-0 flex-1 truncate text-stone-700 dark:text-slate-200">{e.title}</span>
+                  <span className="w-12 shrink-0 text-xs text-slate-400 dark:text-slate-500">{externalLabel(e)}</span>
+                  <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">{e.title}</span>
                 </li>
               ))}
           </ul>
@@ -278,7 +279,7 @@ export default function CalendarPage() {
           <div className="mb-3 flex items-center justify-between">
             <button className="btn-ghost px-2" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
             <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-stone-800 dark:text-slate-100">
+              <span className="text-base font-bold text-slate-800 dark:text-slate-100">
                 {month.toLocaleDateString("en-AU", { month: "long", year: "numeric", timeZone: "UTC" })}
               </span>
               <button
@@ -295,7 +296,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Weekday header */}
-          <div className="mb-1 grid grid-cols-7 text-center text-xs font-semibold text-stone-400 dark:text-slate-500">
+          <div className="mb-1 grid grid-cols-7 text-center text-xs font-semibold text-slate-400 dark:text-slate-500">
             {WEEKDAYS.map((d) => (
               <div key={d} className="py-1">{d}</div>
             ))}
@@ -317,11 +318,11 @@ export default function CalendarPage() {
                   onDrop={() => dropOnDay(day)}
                   className={`flex min-h-[3.6rem] flex-col items-center rounded-xl p-1 text-center transition ${
                     isSelected ? "ring-2 ring-brand-500" : ""
-                  } ${inMonth ? "bg-white dark:bg-night-900" : "bg-stone-50 dark:bg-night-850"} ${dragId ? "ring-1 ring-dashed ring-brand-300" : ""}`}
+                  } ${inMonth ? "bg-white dark:bg-night-900" : "bg-slate-50 dark:bg-night-850"} ${dragId ? "ring-1 ring-dashed ring-brand-300" : ""}`}
                 >
                   <span
                     className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${
-                      isToday ? "bg-brand-600 font-bold text-white" : inMonth ? "text-stone-700 dark:text-slate-200" : "text-stone-300 dark:text-slate-600"
+                      isToday ? "bg-brand-600 font-bold text-white" : inMonth ? "text-slate-700 dark:text-slate-200" : "text-slate-300 dark:text-slate-600"
                     }`}
                   >
                     {day.getUTCDate()}
@@ -334,7 +335,7 @@ export default function CalendarPage() {
                         title={`${j.title} — ${companyLabel(j)}`}
                       />
                     ))}
-                    {dayJobs.length > 3 && <span className="text-[9px] leading-none text-stone-400 dark:text-slate-500">+{dayJobs.length - 3}</span>}
+                    {dayJobs.length > 3 && <span className="text-[9px] leading-none text-slate-400 dark:text-slate-500">+{dayJobs.length - 3}</span>}
                     {dayBusy.length > 0 && (
                       <span className="h-1.5 w-1.5 rounded-full bg-sky-400" title={`${dayBusy.length} calendar event(s)`} />
                     )}
@@ -346,7 +347,7 @@ export default function CalendarPage() {
 
           {/* Selected day's jobs */}
           <div className="mt-5">
-            <h2 className="mb-2 text-sm font-bold text-stone-700 dark:text-slate-200">
+            <h2 className="mb-2 text-sm font-bold text-slate-700 dark:text-slate-200">
               {selectedDay.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })}
             </h2>
             <DayList
@@ -365,7 +366,7 @@ export default function CalendarPage() {
         <>
           {/* Week nav */}
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-stone-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {weekStart.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" })} –{" "}
               {days[6].toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}
             </p>
@@ -375,7 +376,7 @@ export default function CalendarPage() {
               <button className="btn-ghost px-2" onClick={() => setWeekStart(new Date(weekStart.getTime() + 7 * 86400000))} aria-label="Next week">›</button>
             </div>
           </div>
-          <p className="mb-3 hidden text-xs text-stone-400 sm:block dark:text-slate-500">Drag a job to another day to move it.</p>
+          <p className="mb-3 hidden text-xs text-slate-400 sm:block dark:text-slate-500">Drag a job to another day to move it.</p>
 
           <div className="space-y-3">
             {days.map((day) => {
@@ -389,39 +390,39 @@ export default function CalendarPage() {
                   onDrop={() => dropOnDay(day)}
                   className={`card overflow-hidden ${dragId ? "ring-2 ring-dashed ring-brand-300" : ""}`}
                 >
-                  <div className={`flex items-center justify-between px-4 py-2.5 ${isToday ? "bg-brand-50 dark:bg-brand-500/15" : "bg-stone-50 dark:bg-night-850"}`}>
+                  <div className={`flex items-center justify-between px-4 py-2.5 ${isToday ? "bg-brand-50 dark:bg-brand-500/15" : "bg-slate-50 dark:bg-night-850"}`}>
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${isToday ? "text-brand-700 dark:text-brand-300" : "text-stone-700 dark:text-slate-200"}`}>
+                      <span className={`text-sm font-bold ${isToday ? "text-brand-700 dark:text-brand-300" : "text-slate-700 dark:text-slate-200"}`}>
                         {day.toLocaleDateString("en-AU", { weekday: "long", timeZone: "UTC" })}
                       </span>
-                      <span className="text-sm text-stone-400 dark:text-slate-500">{day.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" })}</span>
+                      <span className="text-sm text-slate-400 dark:text-slate-500">{day.toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" })}</span>
                     </div>
                     {isToday && <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">Today</span>}
                   </div>
                   {dayJobs.length === 0 && dayBusy.length === 0 ? (
-                    <p className="px-4 py-3 text-sm text-stone-300 dark:text-slate-600">No jobs</p>
+                    <p className="px-4 py-3 text-sm text-slate-300 dark:text-slate-600">No jobs</p>
                   ) : (
-                    <ul className="divide-y divide-stone-100 dark:divide-night-line2">
+                    <ul className="divide-y divide-slate-100 dark:divide-night-line2">
                       {dayJobs.map((job) => (
                         <li
                           key={job.id}
                           draggable
                           onDragStart={() => setDragId(job.id)}
                           onDragEnd={() => setDragId(null)}
-                          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-stone-50 dark:active:bg-night-800 ${companyPalette(job).bar}`}
+                          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-slate-50 dark:active:bg-night-800 ${companyPalette(job).bar}`}
                         >
-                          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500 dark:text-slate-400">{fmtRange(job._segStart, job._segEnd)}</div>
+                          <div className="w-14 shrink-0 text-xs font-semibold text-slate-500 dark:text-slate-400">{fmtRange(job._segStart, job._segEnd)}</div>
                           <button onClick={() => setSummaryJob(job)} className="min-w-0 flex-1 text-left">
-                            <p className="truncate text-sm font-semibold text-stone-900 dark:text-slate-100">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {job.title}
                               {job._dayCount > 1 && (
-                                <span className="ml-1.5 text-xs font-normal text-stone-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+                                <span className="ml-1.5 text-xs font-normal text-slate-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
                               )}
                             </p>
-                            <p className="truncate text-xs text-stone-500 dark:text-slate-400">{companyLabel(job)}</p>
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{companyLabel(job)}</p>
                           </button>
                           <StatusPill status={job.status} />
-                          <button onClick={() => setReschedule(job)} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-slate-500 dark:hover:bg-night-800" aria-label="Reschedule">
+                          <button onClick={() => setReschedule(job)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-night-800" aria-label="Reschedule">
                             <ClockIcon />
                           </button>
                         </li>
@@ -442,7 +443,7 @@ export default function CalendarPage() {
         </>
       )}
 
-      {loading && <p className="py-6 text-center text-sm text-stone-400 dark:text-slate-500">Loading…</p>}
+      {loading && <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">Loading…</p>}
 
       <RescheduleModal job={reschedule} open={!!reschedule} onClose={() => setReschedule(null)} onDone={load} />
 
@@ -451,7 +452,7 @@ export default function CalendarPage() {
         {summaryJob && (
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-lg font-bold text-stone-900 dark:text-slate-100">{summaryJob.title}</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{summaryJob.title}</h3>
               <StatusPill status={summaryJob.status} />
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${companyPalette(summaryJob).chip}`}>
@@ -462,7 +463,7 @@ export default function CalendarPage() {
               <Row label="When">
                 {fmtDay(summaryJob._segStart)} · {fmtRange(summaryJob._segStart, summaryJob._segEnd)}
                 {summaryJob._dayCount > 1 && (
-                  <span className="text-stone-400 dark:text-slate-500"> · day {summaryJob._dayIndex + 1} of {summaryJob._dayCount}</span>
+                  <span className="text-slate-400 dark:text-slate-500"> · day {summaryJob._dayIndex + 1} of {summaryJob._dayCount}</span>
                 )}
               </Row>
               {summaryJob.clientName && <Row label="Client">{summaryJob.clientName}</Row>}
@@ -470,15 +471,16 @@ export default function CalendarPage() {
               {summaryJob.reference && <Row label="Ref">{summaryJob.reference}</Row>}
             </dl>
             {summaryJob.description && (
-              <p className="whitespace-pre-wrap rounded-xl bg-stone-50 p-3 text-sm text-stone-600 dark:bg-night-850 dark:text-slate-300">{summaryJob.description}</p>
+              <p className="whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-sm text-slate-600 dark:bg-night-850 dark:text-slate-300">{summaryJob.description}</p>
             )}
             {summaryJob.documents && summaryJob.documents.length > 0 && (
               <div className="space-y-1">
                 {summaryJob.documents
                   .filter((d) => d.webViewLink)
                   .map((d) => (
-                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="block truncate text-sm font-medium text-brand-600 underline dark:text-brand-300">
-                      📎 {d.name}
+                    <a key={d.id} href={d.webViewLink || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 max-w-full truncate text-sm font-medium text-brand-600 underline dark:text-brand-300">
+                      <PaperclipIcon className="h-4 w-4" />
+                      {d.name}
                     </a>
                   ))}
               </div>
@@ -492,12 +494,12 @@ export default function CalendarPage() {
       <Modal open={!!summaryEvent} onClose={() => setSummaryEvent(null)} title="Calendar event">
         {summaryEvent && (
           <div className="space-y-3">
-            <h3 className="text-lg font-bold text-stone-900 dark:text-slate-100">{summaryEvent.title}</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{summaryEvent.title}</h3>
             <dl className="space-y-1.5 text-sm">
               <Row label="When">
                 {fmtDay(summaryEvent.start)}
                 {!summaryEvent.allDay && <> · {fmtRange(summaryEvent.start, summaryEvent.end)}</>}
-                {summaryEvent.allDay && <span className="text-stone-400 dark:text-slate-500"> · all day</span>}
+                {summaryEvent.allDay && <span className="text-slate-400 dark:text-slate-500"> · all day</span>}
               </Row>
             </dl>
             <p className="rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">From your Google Calendar</p>
@@ -511,8 +513,8 @@ export default function CalendarPage() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-2">
-      <dt className="w-16 shrink-0 text-stone-400 dark:text-slate-500">{label}</dt>
-      <dd className="min-w-0 flex-1 text-stone-700 dark:text-slate-200">{children}</dd>
+      <dt className="w-16 shrink-0 text-slate-400 dark:text-slate-500">{label}</dt>
+      <dd className="min-w-0 flex-1 text-slate-700 dark:text-slate-200">{children}</dd>
     </div>
   );
 }
@@ -537,30 +539,30 @@ function DayList({
   setDragId?: (id: string | null) => void;
 }) {
   if (jobs.length === 0 && busy.length === 0) {
-    return <div className="card px-4 py-6 text-center text-sm text-stone-300 dark:text-slate-600">No jobs scheduled</div>;
+    return <div className="card px-4 py-6 text-center text-sm text-slate-300 dark:text-slate-600">No jobs scheduled</div>;
   }
   return (
-    <div className="card divide-y divide-stone-100 dark:divide-night-line2">
+    <div className="card divide-y divide-slate-100 dark:divide-night-line2">
       {jobs.map((job) => (
         <div
           key={job.id}
           draggable={draggable}
           onDragStart={() => setDragId?.(job.id)}
           onDragEnd={() => setDragId?.(null)}
-          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-stone-50 dark:active:bg-night-800 ${companyPalette(job).bar}`}
+          className={`flex items-center gap-3 border-l-4 px-4 py-3 active:bg-slate-50 dark:active:bg-night-800 ${companyPalette(job).bar}`}
         >
-          <div className="w-14 shrink-0 text-xs font-semibold text-stone-500 dark:text-slate-400">{fmtRange(job._segStart, job._segEnd)}</div>
+          <div className="w-14 shrink-0 text-xs font-semibold text-slate-500 dark:text-slate-400">{fmtRange(job._segStart, job._segEnd)}</div>
           <button onClick={() => onOpen(job)} className="min-w-0 flex-1 text-left">
-            <p className="truncate text-sm font-semibold text-stone-900 dark:text-slate-100">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
               {job.title}
               {job._dayCount > 1 && (
-                <span className="ml-1.5 text-xs font-normal text-stone-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
+                <span className="ml-1.5 text-xs font-normal text-slate-400 dark:text-slate-500">· Day {job._dayIndex + 1}/{job._dayCount}</span>
               )}
             </p>
-            <p className="truncate text-xs text-stone-500 dark:text-slate-400">{companyLabel(job)}</p>
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{companyLabel(job)}</p>
           </button>
           <StatusPill status={job.status} />
-          <button onClick={() => onReschedule(job)} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-slate-500 dark:hover:bg-night-800" aria-label="Reschedule">
+          <button onClick={() => onReschedule(job)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-night-800" aria-label="Reschedule">
             <ClockIcon />
           </button>
         </div>

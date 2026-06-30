@@ -4,3 +4,7 @@ deploy/config.env
 # Rendered artifacts produced by the scripts on the target host
 deploy/.rendered/
 *.log
+
+# Python bytecode cache from skill scripts
+__pycache__/
+*.pyc

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { ImageIcon } from "@/components/icons";
 import type { JobDTO } from "@/lib/job";
 
 /**
@@ -64,7 +65,7 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
 
       if (saved > 0) onChanged();
       const warn = shareBlocked
-        ? " ⚠️ Your Google account blocked the public link, so clients can’t open it yet — see the note below."
+        ? " Your Google account blocked the public link, so clients can’t open it yet — see the note below."
         : "";
       setMsg(
         note && saved === 0
@@ -120,8 +121,8 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
         <ul className="space-y-2">
           {photos.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-3">
-              <span className="flex min-w-0 items-center gap-2 text-sm text-stone-700 dark:text-slate-200">
-                <span>🖼</span>
+              <span className="flex min-w-0 items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <ImageIcon className="h-5 w-5" />
                 <span className="truncate">{p.name}</span>
               </span>
               {p.webViewLink && (
@@ -133,13 +134,13 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-stone-400 dark:text-slate-500">
+        <p className="text-sm text-slate-400 dark:text-slate-500">
           No photos yet. Upload site photos and a shareable link is created for the client automatically.
         </p>
       )}
 
       {clientLink && (
-        <div className="rounded-xl bg-stone-50 dark:bg-night-850 p-3 ring-1 ring-inset ring-stone-200 dark:ring-night-line">
+        <div className="rounded-xl bg-slate-50 dark:bg-night-850 p-3 ring-1 ring-inset ring-slate-200 dark:ring-night-line">
           <p className="label mb-1">Client photo link (anyone with the link can view)</p>
           <div className="flex items-center gap-2">
             <a
@@ -153,15 +154,15 @@ export function PhotoUpload({ job, onChanged }: { job: JobDTO; onChanged: () => 
             <button
               type="button"
               onClick={copyLink}
-              className="shrink-0 rounded-lg bg-stone-200 dark:bg-night-800 px-3 py-1.5 text-xs font-semibold text-stone-700 dark:text-slate-200 hover:bg-stone-300"
+              className="shrink-0 rounded-lg bg-slate-200 dark:bg-night-850 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-night-800"
             >
-              {copied ? "Copied ✓" : "Copy"}
+              {copied ? "Copied" : "Copy"}
             </button>
           </div>
         </div>
       )}
 
-      {msg && <p className="rounded-lg bg-stone-100 dark:bg-night-800 px-3 py-2 text-sm text-stone-700 dark:text-slate-200">{msg}</p>}
+      {msg && <p className="rounded-lg bg-slate-100 dark:bg-night-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">{msg}</p>}
     </div>
   );
 }

@@ -154,7 +154,7 @@ export function JobForm({
       <div>
         <label className="label">Scheduled start</label>
         <input className="input" type="datetime-local" value={v.scheduledStart} onChange={set("scheduledStart")} />
-        <p className="mt-1 text-xs text-stone-400">
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
           Setting a start while status is Accepted/Scheduled adds it to your Google Calendar.
         </p>
       </div>
@@ -164,7 +164,7 @@ export function JobForm({
         <textarea className="input" rows={2} value={v.notes} onChange={set("notes")} />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
       <div className="flex gap-3 pt-1">
         <button type="button" className="btn-secondary flex-1" onClick={onCancel} disabled={saving}>

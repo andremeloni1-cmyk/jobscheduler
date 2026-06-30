@@ -55,16 +55,16 @@ export function RecentlyDeleted() {
 
   return (
     <div className="card mb-4 p-4">
-      <h2 className="mb-1 font-semibold text-stone-900 dark:text-slate-100">Recently deleted</h2>
-      <p className="mb-3 text-sm text-stone-500 dark:text-slate-400">
+      <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Recently deleted</h2>
+      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
         Deleted jobs are kept for 30 days. Restore one, or remove it for good.
       </p>
-      <ul className="divide-y divide-stone-100 dark:divide-night-line2">
+      <ul className="divide-y divide-slate-100 dark:divide-night-line2">
         {jobs.map((job) => (
           <li key={job.id} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-stone-800 dark:text-slate-200">{job.title}</p>
-              <p className="text-xs text-stone-400 dark:text-slate-500">
+              <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{job.title}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 Deleted {relativeTime(job.deletedAt)}
               </p>
             </div>
@@ -79,7 +79,7 @@ export function RecentlyDeleted() {
               <button
                 onClick={() => purge(job)}
                 disabled={busyId === job.id}
-                className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/15 disabled:opacity-50"
+                className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/15 disabled:opacity-50"
               >
                 {confirmId === job.id ? "Confirm" : "Delete forever"}
               </button>

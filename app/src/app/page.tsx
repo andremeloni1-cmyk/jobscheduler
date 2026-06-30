@@ -10,6 +10,7 @@ import { Brand } from "@/components/Brand";
 import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
+import { ArrowRightIcon, WarningIcon } from "@/components/icons";
 
 const FILTERS = ["active", ...JOB_STATUSES] as const;
 
@@ -150,7 +151,7 @@ export default function DashboardPage() {
           <Link
             href="/activity"
             aria-label="Activity"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-night-900 text-stone-500 dark:text-slate-400 ring-1 ring-stone-200 dark:ring-night-line"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-night-900 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-night-line"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 8v4l3 2" strokeLinecap="round" strokeLinejoin="round" />
@@ -164,7 +165,7 @@ export default function DashboardPage() {
       </header>
 
       {toast && (
-        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-stone-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
+        <div className="fixed inset-x-4 top-4 z-50 mx-auto max-w-lg rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
           {toast}
         </div>
       )}
@@ -180,7 +181,7 @@ export default function DashboardPage() {
             {todayCount > 0 ? `${todayCount} job${todayCount === 1 ? "" : "s"} on site today` : "Nothing scheduled today"}
           </p>
         </div>
-        <span className="text-lg">→</span>
+        <ArrowRightIcon className="h-5 w-5" />
       </Link>
 
       {/* Needs review — possibly moved/cancelled */}
@@ -196,13 +197,16 @@ export default function DashboardPage() {
             {review.map((job) => (
               <div key={job.id} className="card border-l-4 border-amber-400 p-3.5">
                 <Link href={`/jobs/${job.id}`} className="block">
-                  <h3 className="truncate font-semibold text-stone-900 dark:text-slate-100">{job.title}</h3>
-                  <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-300">⚠️ Not in this week’s email — may be moved or cancelled</p>
-                  <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-slate-400">{job.clientName || job.leadSource}</p>
+                  <h3 className="truncate font-semibold text-slate-900 dark:text-slate-100">{job.title}</h3>
+                  <p className="mt-0.5 inline-flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-300">
+                    <WarningIcon className="h-4 w-4" />
+                    <span>Not in this week’s email — may be moved or cancelled</span>
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{job.clientName || job.leadSource}</p>
                 </Link>
                 <div className="mt-3 flex gap-2">
                   <button className="btn-secondary flex-1 py-2" onClick={() => clearFlag(job)}>Keep — it’s fine</button>
-                  <button className="rounded-xl bg-red-50 dark:bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300" onClick={() => cancelJob(job)}>Cancel job</button>
+                  <button className="btn-danger-soft" onClick={() => cancelJob(job)}>Cancel job</button>
                 </div>
               </div>
             ))}
@@ -229,7 +233,7 @@ export default function DashboardPage() {
         <button
           onClick={scanInbox}
           disabled={scanning}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white dark:bg-night-900 px-4 py-2.5 text-sm font-semibold text-stone-600 dark:text-slate-300 ring-1 ring-stone-200 dark:ring-night-line transition active:scale-[0.99] disabled:opacity-50"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white dark:bg-night-900 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-night-line transition active:scale-[0.99] disabled:opacity-50"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -247,7 +251,7 @@ export default function DashboardPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <svg className="absolute left-3 top-3 h-5 w-5 text-stone-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="absolute left-3 top-3 h-5 w-5 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4-4" strokeLinecap="round" />
         </svg>
@@ -260,7 +264,7 @@ export default function DashboardPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-              filter === f ? "bg-brand-600 text-white" : "bg-white dark:bg-night-900 text-stone-600 dark:text-slate-300 ring-1 ring-stone-200 dark:ring-night-line"
+              filter === f ? "bg-brand-600 text-white" : "bg-white dark:bg-night-900 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-night-line"
             }`}
           >
             {f === "active" ? "Active" : STATUS_LABELS[f as keyof typeof STATUS_LABELS]}
@@ -311,8 +315,8 @@ export default function DashboardPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="card px-3 py-3 text-center">
-      <div className="text-lg font-bold text-stone-900 dark:text-slate-100">{value}</div>
-      <div className="text-xs text-stone-500 dark:text-slate-400">{label}</div>
+      <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{value}</div>
+      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
     </div>
   );
 }
@@ -324,8 +328,8 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         <SawIcon />
       </div>
       <div>
-        <p className="font-semibold text-stone-800 dark:text-slate-100">No jobs here yet</p>
-        <p className="text-sm text-stone-500 dark:text-slate-400">Add your first joinery job to get started.</p>
+        <p className="font-semibold text-slate-800 dark:text-slate-100">No jobs here yet</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Add your first joinery job to get started.</p>
       </div>
       <button className="btn-primary" onClick={onAdd}>
         Add a job

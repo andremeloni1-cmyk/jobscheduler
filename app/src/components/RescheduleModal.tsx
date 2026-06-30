@@ -5,6 +5,7 @@ import { Modal } from "./Modal";
 import { toLocalInput, fromLocalInput, fmtDay, fmtRange } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { WORKDAY_MINS, WORK_START_HOUR, WORK_START_MIN, jobEnd, workdaySegments, intervalsOverlap } from "@/lib/schedule";
+import { WarningIcon, CheckIcon } from "@/components/icons";
 
 type ExtEvent = { id: string; title: string; start: string; end: string; allDay: boolean };
 type Busy = { title: string; segments: { start: Date; end: Date }[] };
@@ -122,7 +123,7 @@ export function RescheduleModal({
                 type="button"
                 onClick={() => setDuration(String(d * WORKDAY_MINS))}
                 className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${
-                  parseInt(duration, 10) === d * WORKDAY_MINS ? "bg-brand-600 text-white" : "bg-stone-100 dark:bg-night-800 text-stone-600 dark:text-slate-300"
+                  parseInt(duration, 10) === d * WORKDAY_MINS ? "bg-brand-600 text-white" : "bg-slate-100 dark:bg-night-800 text-slate-600 dark:text-slate-300"
                 }`}
               >
                 {d} day{d > 1 ? "s" : ""}
@@ -130,13 +131,13 @@ export function RescheduleModal({
             ))}
           </div>
           <input className="input" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} />
-          <p className="mt-1 text-xs text-stone-400 dark:text-slate-500">Minutes. One work day = {WORKDAY_MINS} (6:30am–3:00pm). Multi-day jobs spill onto the next working days.</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Minutes. One work day = {WORKDAY_MINS} (6:30am–3:00pm). Multi-day jobs spill onto the next working days.</p>
         </div>
 
         {/* Clash / capacity guard */}
         {conflicts.length > 0 ? (
           <div className="rounded-xl bg-amber-50 dark:bg-amber-500/15 p-3 text-sm text-amber-800 dark:text-amber-300">
-            <p className="font-semibold">⚠️ Clashes with {conflicts.length} other commitment{conflicts.length > 1 ? "s" : ""}:</p>
+            <p className="inline-flex items-center gap-1.5 font-semibold"><WarningIcon className="h-4 w-4" /> Clashes with {conflicts.length} other commitment{conflicts.length > 1 ? "s" : ""}:</p>
             <ul className="mt-1 space-y-0.5">
               {conflicts.slice(0, 4).map((c, i) => (
                 <li key={i} className="truncate">• {c.title} — {fmtDay(c.start)} {fmtRange(c.start, c.end)}</li>
@@ -153,10 +154,10 @@ export function RescheduleModal({
             )}
           </div>
         ) : start ? (
-          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/15 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">✓ No clashes for this slot</div>
+          <div className="flex items-center gap-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"><CheckIcon className="h-4 w-4" /> No clashes for this slot</div>
         ) : null}
 
-        <label className="flex items-center gap-3 text-sm text-stone-700 dark:text-slate-200">
+        <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
           <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} className="h-5 w-5 rounded accent-brand-600" />
           Email the client about the new time
         </label>
