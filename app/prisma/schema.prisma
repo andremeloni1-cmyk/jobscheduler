@@ -27,8 +27,10 @@ model Account {
   calendarId         String   @default("primary")
   driveFolderId      String?  // root Drive folder where job PDFs are filed
   signature          String?  // appended to client emails
-  logo               String?  // base64 logo embedded in client email signatures
+  logo               String?  // base64 primary logo (dashboard light, emails, reports)
   logoMime           String?  // mime type of the logo (e.g. image/png)
+  logoDark           String?  // base64 optional dark-mode logo for the dashboard
+  logoDarkMime       String?  // mime type of the dark-mode logo
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

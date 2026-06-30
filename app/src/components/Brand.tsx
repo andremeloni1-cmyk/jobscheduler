@@ -3,10 +3,17 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/job";
 
-type Branding = { name: string | null; logo: string | null; logoMime: string | null };
+type Branding = {
+  name: string | null;
+  logo: string | null;
+  logoMime: string | null;
+  logoDark: string | null;
+  logoDarkMime: string | null;
+};
 
 /** Shows the owner's business name + logo (falls back to the app name / saw mark
- * until branding loads or if none is set). */
+ * until branding loads or if none is set). When a separate dark-mode logo is set
+ * it's shown in dark mode; otherwise the main logo is used in both themes. */
 export function Brand({
   variant = "header",
   fallback = "JoineryFlow",
@@ -22,14 +29,29 @@ export function Brand({
   }, []);
 
   const name = b?.name || fallback;
-  const logoSrc = b?.logo ? `data:${b.logoMime || "image/png"};base64,${b.logo}` : null;
+  const lightSrc = b?.logo ? `data:${b.logoMime || "image/png"};base64,${b.logo}` : null;
+  // Dark-mode logo falls back to the main logo when not set.
+  const darkSrc = b?.logoDark ? `data:${b.logoDarkMime || "image/png"};base64,${b.logoDark}` : lightSrc;
 
-  if (variant === "hero") {
+  const hero = variant === "hero";
+  const imgCls = hero ? "max-h-20 max-w-[220px] object-contain" : "h-9 max-w-[110px] object-contain";
+
+  // Two <img>s toggled by theme via Tailwind's dark: variant — reacts instantly
+  // to theme changes with no extra JS.
+  const logos = lightSrc ? (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={lightSrc} alt={hero ? name : ""} className={`${imgCls} block dark:hidden`} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={darkSrc || lightSrc} alt={hero ? name : ""} className={`${imgCls} hidden dark:block`} />
+    </>
+  ) : null;
+
+  if (hero) {
     return (
       <div className="flex flex-col items-center text-center">
-        {logoSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoSrc} alt={name} className="mb-4 max-h-20 max-w-[220px] object-contain" />
+        {logos ? (
+          <div className="mb-4">{logos}</div>
         ) : (
           <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-600 text-white shadow-lg">
             <SawIcon className="h-8 w-8" />
@@ -43,10 +65,7 @@ export function Brand({
 
   return (
     <div className="flex items-center gap-2.5">
-      {logoSrc && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoSrc} alt="" className="h-9 max-w-[110px] object-contain" />
-      )}
+      {logos}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">{name}</h1>
         {tagline && <p className="text-sm text-slate-500 dark:text-slate-400">{tagline}</p>}

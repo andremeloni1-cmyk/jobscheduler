@@ -10,7 +10,7 @@ import { defaultTemplate } from "@/lib/default-templates";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
-  account: { name: string | null; phone?: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null; logo?: string | null; logoMime?: string | null } | null;
+  account: { name: string | null; phone?: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null; logo?: string | null; logoMime?: string | null; logoDark?: string | null; logoDarkMime?: string | null } | null;
   templates: Template[];
   google: { configured: boolean; connected: boolean };
   ai?: { configured: boolean };
@@ -32,6 +32,8 @@ export default function SettingsPage() {
   const [signature, setSignature] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
   const [logoMime, setLogoMime] = useState<string | null>(null);
+  const [logoDark, setLogoDark] = useState<string | null>(null);
+  const [logoDarkMime, setLogoDarkMime] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [sources, setSources] = useState<LeadSource[]>([]);
   const [newSourceName, setNewSourceName] = useState("");
@@ -61,6 +63,8 @@ export default function SettingsPage() {
     setSignature(d.account?.signature || "");
     setLogo(d.account?.logo || null);
     setLogoMime(d.account?.logoMime || null);
+    setLogoDark(d.account?.logoDark || null);
+    setLogoDarkMime(d.account?.logoDarkMime || null);
     setTemplates(d.templates);
     try {
       const ls = await api<{ sources: LeadSource[] }>("/api/lead-sources");
@@ -111,7 +115,7 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", {
         method: "PATCH",
-        body: JSON.stringify({ account: { name, phone, signature, logo, logoMime }, templates }),
+        body: JSON.stringify({ account: { name, phone, signature, logo, logoMime, logoDark, logoDarkMime }, templates }),
       });
       setMsg("Saved");
     } finally {
@@ -133,7 +137,8 @@ export default function SettingsPage() {
     setTemplates((prev) => prev.map((t) => (t.key === key ? { ...t, ...patch } : t)));
   }
 
-  function onLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+  // Shared logo file reader → base64. `set` receives (base64, mime).
+  function readLogo(e: React.ChangeEvent<HTMLInputElement>, set: (b64: string, mime: string) => void) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 300 * 1024) {
@@ -144,11 +149,14 @@ export default function SettingsPage() {
     reader.onload = () => {
       const result = String(reader.result); // data:<mime>;base64,<data>
       const comma = result.indexOf(",");
-      setLogo(comma >= 0 ? result.slice(comma + 1) : result);
-      setLogoMime(file.type || "image/png");
+      set(comma >= 0 ? result.slice(comma + 1) : result, file.type || "image/png");
     };
     reader.readAsDataURL(file);
   }
+  const onLogoFile = (e: React.ChangeEvent<HTMLInputElement>) =>
+    readLogo(e, (b, m) => { setLogo(b); setLogoMime(m); });
+  const onDarkLogoFile = (e: React.ChangeEvent<HTMLInputElement>) =>
+    readLogo(e, (b, m) => { setLogoDark(b); setLogoDarkMime(m); });
 
   // Sample values so the preview shows what a real client would receive.
   const previewVars: Record<string, string> = {
@@ -309,17 +317,30 @@ export default function SettingsPage() {
         />
         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Appended to all automated client emails. Save settings to apply.</p>
 
-        <label className="label mt-3">Email logo</label>
+        <label className="label mt-3">Logo</label>
         {logo ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`data:${logoMime || "image/png"};base64,${logo}`} alt="Email logo" className="max-h-16 rounded bg-white p-1 ring-1 ring-slate-200 dark:bg-night-900 dark:ring-night-line" />
+            <img src={`data:${logoMime || "image/png"};base64,${logo}`} alt="Logo" className="max-h-16 rounded bg-white p-1 ring-1 ring-slate-200 dark:ring-night-line" />
             <button className="btn-secondary" onClick={() => { setLogo(null); setLogoMime(null); }}>Remove</button>
           </div>
         ) : (
           <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={onLogoFile} className="block w-full text-sm text-slate-600 dark:text-slate-300" />
         )}
-        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Shown under the signature in client emails. PNG/JPG under 300KB. Save settings to apply.</p>
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Used on the dashboard (light mode), client emails, and reports. PNG/JPG under 300KB. Save settings to apply.</p>
+
+        <label className="label mt-3">Dark-mode logo (optional)</label>
+        {logoDark ? (
+          <div className="flex items-center gap-3">
+            {/* Preview on a dark swatch so a light/white logo is visible. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`data:${logoDarkMime || "image/png"};base64,${logoDark}`} alt="Dark-mode logo" className="max-h-16 rounded bg-night-900 p-1 ring-1 ring-night-line" />
+            <button className="btn-secondary" onClick={() => { setLogoDark(null); setLogoDarkMime(null); }}>Remove</button>
+          </div>
+        ) : (
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={onDarkLogoFile} className="block w-full text-sm text-slate-600 dark:text-slate-300" />
+        )}
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Shown on the dashboard in dark mode (e.g. a white version of your logo). Falls back to your main logo if not set.</p>
       </div>
 
       {/* Password */}
