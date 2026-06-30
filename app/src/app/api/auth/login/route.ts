@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  if (!checkPassword(body.password || "")) {
+  if (!(await checkPassword(body.password || ""))) {
     return json({ error: "Incorrect password" }, 401);
   }
   await setSessionCookie();
