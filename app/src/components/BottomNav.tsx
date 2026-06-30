@@ -16,8 +16,8 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/70 dark:border-night-line bg-white/80 dark:bg-night-900/70 backdrop-blur-xl">
-      <div className="mx-auto grid max-w-2xl grid-cols-5">
+    <nav className="fixed inset-x-0 bottom-0 z-30 transform-gpu border-t border-slate-200/70 dark:border-night-line bg-white/95 dark:bg-night-900/90 backdrop-blur-md [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
+      <div className="mx-auto grid max-w-2xl grid-cols-5 pb-[env(safe-area-inset-bottom)]">
         {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
