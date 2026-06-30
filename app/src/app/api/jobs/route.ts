@@ -3,13 +3,16 @@ import { json, nextReference, parseDate } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { onStatusChange } from "@/lib/automations";
 import { companyResolver } from "@/lib/company";
+import { parseChecklist } from "@/lib/checklist";
 
 export const dynamic = "force-dynamic";
 
-// Attach the resolved client-company display name to each job.
-async function withCompany<T extends { companyId?: string | null; leadSource?: string | null }>(jobs: T[]): Promise<(T & { companyName: string | null })[]> {
+// Attach the resolved client-company display name + parsed checklist to each job.
+async function withCompany<T extends { companyId?: string | null; leadSource?: string | null; checklist?: string | null }>(
+  jobs: T[]
+): Promise<(Omit<T, "checklist"> & { companyName: string | null; checklist: ReturnType<typeof parseChecklist> })[]> {
   const resolve = await companyResolver();
-  return jobs.map((j) => ({ ...j, companyName: resolve(j) }));
+  return jobs.map((j) => ({ ...j, companyName: resolve(j), checklist: parseChecklist(j.checklist) }));
 }
 
 export async function GET(req: Request) {

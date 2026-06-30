@@ -8,6 +8,7 @@ import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
 import { CheckCircleIcon, PinIcon, PhoneIcon, NavigationIcon, PaperclipIcon } from "@/components/icons";
 import { CountUp } from "@/components/CountUp";
+import { ChecklistBadge } from "@/components/ChecklistBadge";
 
 type RunJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
 
@@ -133,6 +134,9 @@ export default function TodayPage() {
                     </h3>
                   </Link>
                   <p className="truncate text-sm text-slate-500 dark:text-slate-400">{job.companyName || job.clientName || "—"}</p>
+                  {(job.checklist?.length ?? 0) > 0 && (
+                    <div className="mt-1 text-xs"><ChecklistBadge checklist={job.checklist} /></div>
+                  )}
                 </div>
                 <StatusPill status={job.status} />
               </div>
