@@ -56,7 +56,7 @@ export function WorkloadCard({ jobs }: { jobs: JobDTO[] }) {
               {w.start.toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
             </span>
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-night-800">
-              <div className={`h-full rounded-full ${barColor(w.pct)}`} style={{ width: `${w.pct}%` }} />
+              <div className={`grow-x h-full rounded-full ${barColor(w.pct)}`} style={{ width: `${w.pct}%` }} />
             </div>
             <span className="w-24 shrink-0 text-right text-xs text-slate-400 dark:text-slate-500">
               {w.pct}% · {w.jobCount} job{w.jobCount === 1 ? "" : "s"}

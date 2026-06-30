@@ -11,6 +11,7 @@ import { JOB_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
 import { ArrowRightIcon, WarningIcon } from "@/components/icons";
+import { CountUp } from "@/components/CountUp";
 
 const FILTERS = ["active", ...JOB_STATUSES] as const;
 
@@ -232,12 +233,17 @@ export default function DashboardPage() {
 
       {/* Summary */}
       <div className="mb-5 grid grid-cols-3 gap-3">
-        <Stat label="Active" value={String(counts.active)} />
-        <Stat label="Scheduled" value={String(counts.scheduled)} />
+        <Stat label="Active" value={<CountUp to={counts.active} />} />
+        <Stat label="Scheduled" value={<CountUp to={counts.scheduled} />} />
         <Stat
           dark
           label="Value"
-          value={new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(counts.value)}
+          value={
+            <CountUp
+              to={counts.value}
+              format={(n) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Math.round(n))}
+            />
+          }
         />
       </div>
 
@@ -294,7 +300,7 @@ export default function DashboardPage() {
       ) : filtered.length === 0 ? (
         <EmptyState onAdd={() => setShowNew(true)} />
       ) : (
-        <div className="stagger space-y-3">
+        <div key={filter} className="stagger space-y-3">
           {filtered.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
@@ -324,7 +330,7 @@ export default function DashboardPage() {
   );
 }
 
-function Stat({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) {
+function Stat({ label, value, dark = false }: { label: string; value: React.ReactNode; dark?: boolean }) {
   return (
     <div className={`${dark ? "card-dark" : "card"} px-3 py-4 text-center`}>
       <div className={`font-display text-xl font-bold ${dark ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>{value}</div>

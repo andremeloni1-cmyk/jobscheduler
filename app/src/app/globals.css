@@ -73,6 +73,16 @@ html.dark {
   animation: routeFade 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Bar fill — grows from the left on mount (progress / workload bars). */
+@keyframes growX {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.grow-x {
+  transform-origin: left;
+  animation: growX 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* Toast / banner drop-in from the top. */
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(-12px); }
@@ -122,6 +132,7 @@ html.dark .skeleton {
   .sheet-rise,
   .route-fade,
   .toast-in,
+  .grow-x,
   .skeleton {
     animation: none !important;
   }

@@ -7,6 +7,7 @@ import { fmtRange } from "@/lib/format";
 import { api, type JobDTO } from "@/lib/job";
 import { workdaySegments, WORKDAY_MINS } from "@/lib/schedule";
 import { CheckCircleIcon, PinIcon, PhoneIcon, NavigationIcon, PaperclipIcon } from "@/components/icons";
+import { CountUp } from "@/components/CountUp";
 
 type RunJob = JobDTO & { _segStart: string; _segEnd: string; _dayIndex: number; _dayCount: number };
 
@@ -95,7 +96,7 @@ export default function TodayPage() {
             <div className="card-hero bento-wide">
               <p className="eyebrow text-brand-700/80 dark:text-brand-200/80">On site today</p>
               <p className="mt-1 font-display text-3xl font-bold">
-                {jobs.length} job{jobs.length === 1 ? "" : "s"}
+                <CountUp to={jobs.length} /> job{jobs.length === 1 ? "" : "s"}
               </p>
               <p className="mt-1 text-sm text-brand-900/70 dark:text-brand-50/70">
                 {today.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
@@ -104,7 +105,7 @@ export default function TodayPage() {
             <div className="card-dark">
               <p className="eyebrow text-slate-400">In progress</p>
               <p className="mt-1 font-display text-3xl font-bold">
-                {jobs.filter((j) => j.status === "in_progress").length}
+                <CountUp to={jobs.filter((j) => j.status === "in_progress").length} />
               </p>
             </div>
             <div className="card">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 const items = [
   { href: "/", label: "Jobs", icon: ClipboardIcon },
@@ -13,29 +14,47 @@ const items = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [ind, setInd] = useState<{ left: number; width: number } | null>(null);
+
+  const activeIndex = items.findIndex(({ href }) => (href === "/" ? pathname === "/" : pathname.startsWith(href)));
+
+  // Measure the active item so the highlight pill can glide to it.
+  useEffect(() => {
+    const el = itemRefs.current[activeIndex];
+    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [activeIndex, pathname]);
+
   if (pathname === "/login") return null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 transform-gpu border-t border-slate-200/70 dark:border-night-line bg-white/95 dark:bg-night-900/90 backdrop-blur-md [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
-      <div className="mx-auto grid max-w-2xl grid-cols-5 pb-[env(safe-area-inset-bottom)]">
-        {items.map(({ href, label, icon: Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+      <div className="relative mx-auto grid max-w-2xl grid-cols-5 pb-[env(safe-area-inset-bottom)]">
+        {/* Gliding highlight — slides to the active tab. */}
+        {ind && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-2.5 flex justify-center transition-all duration-300 ease-out motion-reduce:transition-none"
+            style={{ left: ind.left, width: ind.width }}
+          >
+            <span className="h-9 w-14 rounded-full bg-brand-100 dark:bg-brand-500/20" />
+          </span>
+        )}
+        {items.map(({ href, label, icon: Icon }, i) => {
+          const active = i === activeIndex;
           return (
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center gap-1 pt-2.5 pb-3 text-xs font-medium transition active:scale-95"
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+              className="relative z-10 flex flex-col items-center gap-1 pt-2.5 pb-3 text-xs font-medium transition active:scale-95"
             >
-              <span
-                className={`flex h-9 w-14 items-center justify-center rounded-full transition ${
-                  active
-                    ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200"
-                    : "text-slate-400 dark:text-slate-500"
-                }`}
-              >
+              <span className={`flex h-9 w-14 items-center justify-center transition-colors ${active ? "text-brand-700 dark:text-brand-200" : "text-slate-400 dark:text-slate-500"}`}>
                 <Icon className="h-6 w-6" />
               </span>
-              <span className={active ? "text-brand-700 dark:text-brand-200" : "text-slate-400 dark:text-slate-500"}>
+              <span className={`transition-colors ${active ? "text-brand-700 dark:text-brand-200" : "text-slate-400 dark:text-slate-500"}`}>
                 {label}
               </span>
             </Link>
