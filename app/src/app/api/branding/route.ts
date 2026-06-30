@@ -12,5 +12,7 @@ export async function GET() {
     name: account?.name || null,
     logo: account?.logo || null,
     logoMime: account?.logoMime || null,
+    logoDark: account?.logoDark || null,
+    logoDarkMime: account?.logoDarkMime || null,
   });
 }

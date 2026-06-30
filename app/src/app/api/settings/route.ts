@@ -20,6 +20,8 @@ export async function GET() {
           signature: account.signature,
           logo: account.logo,
           logoMime: account.logoMime,
+          logoDark: account.logoDark,
+          logoDarkMime: account.logoDarkMime,
         }
       : null,
     templates,
@@ -49,6 +51,8 @@ export async function PATCH(req: Request) {
           signature: "signature" in body.account ? body.account.signature || null : account.signature,
           logo: "logo" in body.account ? body.account.logo || null : account.logo,
           logoMime: "logoMime" in body.account ? body.account.logoMime || null : account.logoMime,
+          logoDark: "logoDark" in body.account ? body.account.logoDark || null : account.logoDark,
+          logoDarkMime: "logoDarkMime" in body.account ? body.account.logoDarkMime || null : account.logoDarkMime,
         },
       });
     }
