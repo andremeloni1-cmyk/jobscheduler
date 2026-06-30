@@ -6,10 +6,11 @@ import { NotificationsCard } from "@/components/NotificationsCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RecentlyDeleted } from "@/components/RecentlyDeleted";
 import { CheckIcon } from "@/components/icons";
+import { defaultTemplate } from "@/lib/default-templates";
 
 type Template = { key: string; subject: string; body: string; enabled: boolean };
 type SettingsData = {
-  account: { name: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null; logo?: string | null; logoMime?: string | null } | null;
+  account: { name: string | null; phone?: string | null; email: string; googleEmail: string | null; calendarId: string; signature?: string | null; logo?: string | null; logoMime?: string | null } | null;
   templates: Template[];
   google: { configured: boolean; connected: boolean };
   ai?: { configured: boolean };
@@ -27,6 +28,7 @@ type LeadSource = { id: string; name: string; email: string; enabled: boolean; t
 export default function SettingsPage() {
   const [data, setData] = useState<SettingsData | null>(null);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [signature, setSignature] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
   const [logoMime, setLogoMime] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export default function SettingsPage() {
     const d = await api<SettingsData>("/api/settings");
     setData(d);
     setName(d.account?.name || "");
+    setPhone(d.account?.phone || "");
     setSignature(d.account?.signature || "");
     setLogo(d.account?.logo || null);
     setLogoMime(d.account?.logoMime || null);
@@ -108,7 +111,7 @@ export default function SettingsPage() {
     try {
       await api("/api/settings", {
         method: "PATCH",
-        body: JSON.stringify({ account: { name, signature, logo, logoMime }, templates }),
+        body: JSON.stringify({ account: { name, phone, signature, logo, logoMime }, templates }),
       });
       setMsg("Saved");
     } finally {
@@ -150,12 +153,17 @@ export default function SettingsPage() {
   // Sample values so the preview shows what a real client would receive.
   const previewVars: Record<string, string> = {
     clientName: "Sarah Whitfield",
+    clientPhone: "07700 900123",
     jobTitle: "Kitchen worktop replacement",
     startDate: "Friday, 4 July 2026",
     startTime: "07:00",
+    endTime: "13:00",
+    duration: "1 day",
     address: "14 Millbrook Lane, Bristol",
     reference: "JOB-1042",
     ownerName: name || "Your business",
+    businessPhone: phone || "your phone",
+    businessEmail: data?.account?.email || "you@business.com",
   };
   function renderPreview(text: string): string {
     return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => previewVars[k] ?? `{{${k}}}`);
@@ -288,6 +296,9 @@ export default function SettingsPage() {
         <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">Your business</h2>
         <label className="label">Name (used in emails & reports)</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meloni Joinery" />
+        <label className="label mt-3">Business phone</label>
+        <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 07700 900123" />
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Available in email templates as <code>{"{{businessPhone}}"}</code>.</p>
         <label className="label mt-3">Email signature</label>
         <textarea
           className="input"
@@ -318,9 +329,11 @@ export default function SettingsPage() {
       <div className="card mb-4 p-4">
         <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Automated emails</h2>
         <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-          Sent automatically to clients. Use placeholders like{" "}
-          <code>{"{{clientName}}"}</code>, <code>{"{{jobTitle}}"}</code>, <code>{"{{startDate}}"}</code>,{" "}
-          <code>{"{{startTime}}"}</code>, <code>{"{{address}}"}</code>, <code>{"{{reference}}"}</code>.
+          Sent automatically to clients. Placeholders:{" "}
+          <code>{"{{clientName}}"}</code>, <code>{"{{clientPhone}}"}</code>, <code>{"{{jobTitle}}"}</code>,{" "}
+          <code>{"{{startDate}}"}</code>, <code>{"{{startTime}}"}</code>, <code>{"{{endTime}}"}</code>,{" "}
+          <code>{"{{duration}}"}</code>, <code>{"{{address}}"}</code>, <code>{"{{reference}}"}</code>,{" "}
+          <code>{"{{ownerName}}"}</code>, <code>{"{{businessPhone}}"}</code>, <code>{"{{businessEmail}}"}</code>.
         </p>
         <div className="space-y-4">
           {templates.map((t) => (
@@ -356,6 +369,18 @@ export default function SettingsPage() {
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{renderPreview(t.subject) || "(no subject)"}</p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{renderPreview(t.body)}</p>
                 </div>
+                {defaultTemplate(t.key) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = defaultTemplate(t.key);
+                      if (d) updateTemplate(t.key, { subject: d.subject, body: d.body });
+                    }}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  >
+                    Reset to default wording (then Save settings)
+                  </button>
+                )}
               </div>
             </details>
           ))}

@@ -109,7 +109,7 @@ export async function POST(req: Request, { params }: Params) {
       const tpl = await resolveTemplate(
         job,
         "report",
-        jobTemplateVars(job, account?.name || "The Workshop")
+        jobTemplateVars(job, { name: account?.name || "The Workshop", phone: account?.phone, email: account?.email })
       );
       // Add a clickable "View site photos" button to the email. The folder was
       // already ensured + shared above, so this link opens for the client.

@@ -15,6 +15,7 @@ model Account {
   id              String   @id @default(cuid())
   email           String   @unique
   name            String?
+  phone           String?  // business phone — usable in email templates as {{businessPhone}}
   // App login password (scrypt hash). When set, it overrides APP_PASSWORD and is
   // what the owner changes from Settings → Password.
   passwordHash    String?
