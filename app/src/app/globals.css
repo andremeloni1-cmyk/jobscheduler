@@ -230,7 +230,7 @@ a {
   /* Pale-orange accent tile (the "hero" card) — tinted frosted glass. */
   .card-hero {
     @apply rounded-bento bg-brand-100/70 backdrop-blur-xl p-5 text-brand-950 ring-1 ring-inset ring-white/50 shadow-glass
-      dark:bg-brand-500/12 dark:text-brand-50 dark:ring-brand-500/20 dark:shadow-glass-dark;
+      dark:bg-brand-500/10 dark:text-brand-50 dark:ring-brand-500/20 dark:shadow-glass-dark;
   }
   /* Dark accent tile for emphasis (stats / revenue) — dark in both themes. */
   .card-dark {
