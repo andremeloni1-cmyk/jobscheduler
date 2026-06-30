@@ -137,8 +137,18 @@ export default function DashboardPage() {
     }
   }
 
-  async function createJob(payload: Record<string, unknown>) {
-    await api("/api/jobs", { method: "POST", body: JSON.stringify(payload) });
+  async function createJob(payload: Record<string, unknown>, pdf?: File | null) {
+    const { job } = await api<{ job: JobDTO }>("/api/jobs", { method: "POST", body: JSON.stringify(payload) });
+    // If a plans PDF was attached, upload it to the new job (multipart — bypass
+    // the JSON `api()` helper). Job creation already succeeded, so never block on it.
+    if (pdf) {
+      const form = new FormData();
+      form.append("files", pdf);
+      const res = await fetch(`/api/jobs/${job.id}/pdfs`, { method: "POST", body: form })
+        .then((r) => r.json())
+        .catch(() => null);
+      if (res && res.connected === false) flash("Job created — connect Google in Settings to attach the PDF.");
+    }
     setShowNew(false);
     await load();
   }
