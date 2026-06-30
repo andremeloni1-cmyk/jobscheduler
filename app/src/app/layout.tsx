@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e25f1c",
+  themeColor: "#f25623",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col">
-          <main className="flex-1 pb-24">{children}</main>
+          <main className="flex-1 pb-28">{children}</main>
           <BottomNav />
         </div>
       </body>

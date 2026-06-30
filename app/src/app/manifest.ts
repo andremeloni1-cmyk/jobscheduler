@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Organise and schedule joinery jobs, with Google Calendar, Drive and Gmail automations.",
     start_url: "/",
     display: "standalone",
-    background_color: "#fafaf9",
-    theme_color: "#0d9488",
+    background_color: "#ededed",
+    theme_color: "#f25623",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
   };
 }

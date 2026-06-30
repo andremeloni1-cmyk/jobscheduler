@@ -28,8 +28,8 @@ export function BottomNav() {
   if (pathname === "/login") return null;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 transform-gpu border-t border-slate-200/70 dark:border-night-line bg-white/95 dark:bg-night-900/90 backdrop-blur-md [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
-      <div className="relative mx-auto grid max-w-2xl grid-cols-5 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-30 transform-gpu px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
+      <div className="relative mx-auto grid max-w-md grid-cols-5 rounded-full bg-white/70 dark:bg-night-900/65 backdrop-blur-2xl ring-1 ring-inset ring-white/60 dark:ring-white/10 shadow-glass dark:shadow-glass-dark">
         {/* Gliding highlight — slides to the active tab. */}
         {ind && (
           <span
