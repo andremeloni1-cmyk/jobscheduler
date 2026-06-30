@@ -1,7 +1,7 @@
 # Ingenuity joinery (Peter) — rate card
 
 - **Company:** Ingenuity joinery (contact: Peter)
-- **Type:** _TBC (builder or direct client?)_
+- **Type:** trade — joinery company you subcontract for
 - **Due terms:** 7 days
 - **GST:** exclusive (+10% on top)
 - **Source:** INV-0239 (customer = Ingenuity joinery), confirmed line-by-line.

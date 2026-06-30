@@ -1,7 +1,7 @@
 # Harrington Kitchens — rate card
 
 - **Company:** Harrington Kitchens (spelled "Harigton Kitchens" in their Xero record)
-- **Type:** _TBC (builder or direct client?)_
+- **Type:** trade — joinery company you subcontract for
 - **Due terms:** 7 days
 - **GST:** exclusive (+10% on top)
 - **Source:** INV-0230 (customer = Harigton Kitchens), confirmed line-by-line.
