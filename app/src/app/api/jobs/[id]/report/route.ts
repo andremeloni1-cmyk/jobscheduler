@@ -43,11 +43,20 @@ export async function POST(req: Request, { params }: Params) {
     // shared, and use its link when the report has no link or still points at
     // the private main job folder. This runs for Download too, not just Email.
     const photos = await ensureJobPhotosFolder(job).catch(() => null);
-    const mainFolderLink = job.driveFolderId
-      ? `https://drive.google.com/drive/folders/${job.driveFolderId}`
-      : "";
     if (photos) {
-      if (!data.driveImagesLink || data.driveImagesLink === mainFolderLink) {
+      // The Photos (client) subfolder is the ONLY thing we ever make publicly
+      // viewable. So the client-facing link must never point at one of our own
+      // private folders — the main job folder (plans/POs/quotes) or the root
+      // folder that holds *every* job. Replace those (and an empty link) with the
+      // safe shared photos link; a genuinely external link the owner pasted is
+      // left untouched.
+      const folderLink = (id?: string | null) => (id ? `https://drive.google.com/drive/folders/${id}` : "");
+      const norm = (u?: string) => (u || "").trim().split("?")[0].replace(/\/+$/, "");
+      const privateLinks = new Set(
+        [folderLink(job.driveFolderId), folderLink(account?.driveFolderId)].map(norm).filter(Boolean)
+      );
+      const current = norm(data.driveImagesLink);
+      if (!current || privateLinks.has(current)) {
         data.driveImagesLink = photos.link;
       }
       // Persist the corrected link onto the saved report.
