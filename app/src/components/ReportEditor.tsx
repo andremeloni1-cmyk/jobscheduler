@@ -135,12 +135,11 @@ export function ReportEditor({
     }
   }
 
-  // Prefer the shared "Photos (client)" folder (safe to send to a client) over
-  // the main job folder, which also holds private plans/POs.
+  // Only ever offer the shared "Photos (client)" folder as a client link — never
+  // the main job folder, which also holds private plans/POs. When no photos
+  // folder exists yet, this is empty and the server creates + links it on send.
   const photosFolderLink = job.drivePhotosFolderId
     ? `https://drive.google.com/drive/folders/${job.drivePhotosFolderId}`
-    : job.driveFolderId
-    ? `https://drive.google.com/drive/folders/${job.driveFolderId}`
     : "";
 
   return (
@@ -274,12 +273,17 @@ export function ReportEditor({
             onClick={() => setData((p) => ({ ...p, driveImagesLink: photosFolderLink }))}
             className="mt-1 text-xs font-semibold text-brand-600"
           >
-            {job.drivePhotosFolderId ? "Use this job’s photos folder" : "Use this job’s Drive folder"}
+            Use this job’s photos folder
           </button>
         )}
         {job.drivePhotosFolderId && data.driveImagesLink === photosFolderLink && (
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             Linked to this job’s uploaded photos — clients can view them from the report.
+          </p>
+        )}
+        {!job.drivePhotosFolderId && !data.driveImagesLink && (
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            On send, a private “Photos (client)” folder is shared with the client — only those images are visible, never your plans or other jobs.
           </p>
         )}
       </div>
