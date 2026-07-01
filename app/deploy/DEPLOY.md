@@ -82,6 +82,27 @@ are new commits. Watch what it does with `tail -f app/auto-deploy.log`. Turn it
 off again with `sudo bash deploy/setup-auto-deploy.sh --remove`. (CI gates every
 PR green before merge, so only built code reaches `master`.)
 
+## Making the repo private (keep auto-deploy working)
+
+The repo can be **private** — you and Claude can still open PRs and deploy. The
+only catch: the VPS pulls over **HTTPS**, which works anonymously on a *public*
+repo but needs credentials on a *private* one. If you make it private without
+this step, the auto-deploy `git fetch` fails silently and deploys just stop.
+
+Give the server a **read-only deploy key** first (do this while still public so
+you can test it):
+
+```bash
+cd /root/jobscheduler/app && sudo bash deploy/setup-deploy-key.sh
+```
+
+It generates a read-only SSH key, prints the public half to paste into
+**GitHub → repo → Settings → Deploy keys → Add deploy key** (leave *Allow write
+access* **unchecked**), switches the repo remote from HTTPS to SSH, and verifies
+a fetch works. Once it prints **OK**, set the repo to Private — `update.sh` and
+the auto-deploy cron keep running unchanged. (`.env` is gitignored, so no secrets
+live in the repo either way.)
+
 ## Operations cheat-sheet
 
 | Task | Command |
