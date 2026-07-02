@@ -1,10 +1,18 @@
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { newOAuthClient } from "@/lib/google/oauth";
+import { newOAuthClient, OAUTH_STATE_COOKIE } from "@/lib/google/oauth";
 import { prisma } from "@/lib/db";
 import { isAuthenticated } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
 
 export async function GET(req: Request) {
   const base = process.env.APP_URL || "http://localhost:3000";
@@ -13,6 +21,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   if (!code) return NextResponse.redirect(new URL("/settings?error=no_code", base));
+
+  // CSRF: match the returned state against the cookie set in authUrl(), then
+  // clear it. Reject before exchanging the code for tokens.
+  const store = await cookies();
+  const expectedState = store.get(OAUTH_STATE_COOKIE)?.value || "";
+  const state = searchParams.get("state") || "";
+  store.delete(OAUTH_STATE_COOKIE);
+  if (!expectedState || !safeEqual(state, expectedState)) {
+    return NextResponse.redirect(new URL("/settings?error=bad_state", base));
+  }
 
   try {
     const client = newOAuthClient();

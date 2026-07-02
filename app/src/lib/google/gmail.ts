@@ -6,6 +6,8 @@ import { fileMatchesRef } from "@/lib/refs";
 const wrap76 = (s: string): string => s.replace(/(.{76})/g, "$1\r\n");
 const escapeHtml = (s: string): string =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// Strip CR/LF so untrusted values can't inject extra RFC 2822 headers.
+const stripHeader = (s: string): string => s.replace(/[\r\n]/g, "");
 
 /** Builds a raw RFC 2822 message: a text/plain + text/html alternative, with an
  * optional inline logo (multipart/related, shown via cid:logo) and an optional
@@ -19,7 +21,13 @@ function buildRawMessage(opts: {
   attachment?: { filename: string; data: Buffer; mimeType?: string };
   logo?: { data: Buffer; mime: string };
 }): string {
-  const { to, from, subject, text, html, attachment, logo } = opts;
+  const { from, text, html, logo } = opts;
+  // Sanitise anything interpolated into raw headers (prevents header injection).
+  const to = stripHeader(opts.to);
+  const subject = stripHeader(opts.subject);
+  const attachment = opts.attachment
+    ? { ...opts.attachment, filename: stripHeader(opts.attachment.filename) }
+    : undefined;
   const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
 
   // text + html alternative.

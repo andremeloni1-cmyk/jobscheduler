@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { json } from "@/lib/utils";
-import { isAuthenticated, checkPassword, hashPassword } from "@/lib/session";
+import { isAuthenticated, checkPassword, hashPassword, setGateCookie } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,9 @@ export async function POST(req: Request) {
     account = await prisma.account.create({ data: { email: process.env.OWNER_EMAIL || "owner@joineryflow.local" } });
   }
   await prisma.account.update({ where: { id: account.id }, data: { passwordHash: hashPassword(next) } });
+
+  // Signal the Edge middleware (no DB access) that a login gate is now active.
+  await setGateCookie();
 
   return json({ ok: true });
 }

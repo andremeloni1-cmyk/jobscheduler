@@ -1,6 +1,12 @@
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { google } from "googleapis";
 import type { OAuth2Client } from "google-auth-library";
 import { prisma } from "@/lib/db";
+
+// Short-lived cookie holding the OAuth `state` (CSRF token) between the auth
+// redirect and the callback. httpOnly so it can't be read/forged from JS.
+export const OAUTH_STATE_COOKIE = "jf_oauth_state";
 
 export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -30,12 +36,24 @@ export function newOAuthClient(): OAuth2Client {
   );
 }
 
-export function authUrl(): string {
+export async function authUrl(): Promise<string> {
   const client = newOAuthClient();
+  // CSRF protection: random state echoed back by Google and matched against a
+  // short-lived httpOnly cookie in the callback.
+  const state = crypto.randomBytes(16).toString("hex");
+  const store = await cookies();
+  store.set(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 600, // 10 minutes
+  });
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent", // force a refresh token
     scope: GOOGLE_SCOPES,
+    state,
   });
 }
 

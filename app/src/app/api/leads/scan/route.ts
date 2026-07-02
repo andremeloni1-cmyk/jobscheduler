@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { json } from "@/lib/utils";
 import { isAuthenticated } from "@/lib/session";
 import { scanForLeads } from "@/lib/leads";
@@ -5,12 +6,19 @@ import { sendPush } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
+// Constant-time string compare (guard length — timingSafeEqual throws on mismatch).
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+
 // Allow either a logged-in user (manual "Check now") or the cron job
 // (presents the shared CRON_SECRET) to trigger an inbox scan.
 async function authorized(req: Request): Promise<boolean> {
   if (await isAuthenticated()) return true;
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("x-cron-secret") === secret) return true;
+  if (secret && safeEqual(req.headers.get("x-cron-secret") || "", secret)) return true;
   return false;
 }
 
