@@ -3,9 +3,15 @@ import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 
 const COOKIE = "jf_session";
+const GATE_COOKIE = "jf_gate";
+const MAX_AGE = 60 * 60 * 24 * 30; // session lifetime (seconds)
 
+// Fail closed: never fall back to a guessable default that would make cookies
+// forgeable. A missing secret is a misconfiguration, not a dev convenience.
 function secret(): string {
-  return process.env.SESSION_SECRET || "dev-insecure-secret";
+  const s = process.env.SESSION_SECRET;
+  if (!s) throw new Error("SESSION_SECRET must be set");
+  return s;
 }
 
 function sign(value: string): string {
@@ -18,7 +24,17 @@ function verify(signed: string | undefined): boolean {
   const idx = signed.lastIndexOf(".");
   if (idx < 0) return false;
   const value = signed.slice(0, idx);
-  return sign(value) === signed;
+  const sig = signed.slice(idx + 1);
+  const expected = crypto.createHmac("sha256", secret()).update(value).digest("hex");
+  // Constant-time HMAC compare (guard length first — timingSafeEqual throws on mismatch).
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  // Reject expired tokens. Payload is "<sid>.<issuedAtMs>"; old "ok" cookies
+  // have no timestamp and are treated as invalid (a fresh login is required).
+  const iat = Number(value.split(".")[1]);
+  if (!Number.isFinite(iat)) return false;
+  return Date.now() - iat < MAX_AGE * 1000;
 }
 
 /** Whether a login gate is active: either APP_PASSWORD is set, or the owner has
@@ -65,18 +81,41 @@ export async function checkPassword(pw: string): Promise<boolean> {
 
 export async function setSessionCookie() {
   const store = await cookies();
-  store.set(COOKIE, sign("ok"), {
+  // Payload carries a random session id + issued-at so cookies aren't a single
+  // static forever-valid value; verify() re-checks the timestamp against MAX_AGE.
+  const payload = `${crypto.randomBytes(16).toString("hex")}.${Date.now()}`;
+  store.set(COOKIE, sign(payload), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: MAX_AGE,
   });
 }
 
 export async function clearSessionCookie() {
   const store = await cookies();
   store.delete(COOKIE);
+}
+
+/** Lightweight flag telling the Edge middleware (which has no DB access) that an
+ * in-app password gate is active. NOT a security boundary on its own — API
+ * routes still enforce isAuthenticated() server-side; this only drives the page
+ * redirect to /login when APP_PASSWORD isn't set. */
+export async function setGateCookie() {
+  const store = await cookies();
+  store.set(GATE_COOKIE, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
+export async function clearGateCookie() {
+  const store = await cookies();
+  store.delete(GATE_COOKIE);
 }
 
 /** True when the request is allowed (no gate, or valid cookie). */

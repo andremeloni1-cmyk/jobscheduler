@@ -11,5 +11,5 @@ export async function GET() {
       new URL("/settings?error=google_not_configured", process.env.APP_URL || "http://localhost:3000")
     );
   }
-  return NextResponse.redirect(authUrl());
+  return NextResponse.redirect(await authUrl());
 }
